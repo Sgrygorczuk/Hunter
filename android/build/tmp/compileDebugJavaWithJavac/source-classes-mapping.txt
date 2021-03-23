@@ -1,0 +1,13 @@
+com/mygdx/hunter/BuildConfig.java
+ com.mygdx.hunter.BuildConfig
+com/mygdx/templet/AndroidLauncher.java
+ com.mygdx.templet.AndroidLauncher
+ com.mygdx.templet.AndroidLauncher$1
+ com.mygdx.templet.AndroidLauncher$2
+com/mygdx/templet/SaveData/SaveEntry.java
+ com.mygdx.templet.SaveData.SaveEntry
+com/mygdx/templet/SaveData/SaveDatabase.java
+ com.mygdx.templet.SaveData.SaveDatabase
+ com.mygdx.templet.SaveData.SaveDatabase$AppDatabase
+com/mygdx/templet/SaveData/SaveDao.java
+ com.mygdx.templet.SaveData.SaveDao
