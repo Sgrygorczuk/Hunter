@@ -22,6 +22,7 @@ import com.badlogic.gdx.utils.viewport.StretchViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
 import com.mygdx.templet.objects.Platform;
 import com.mygdx.templet.objects.aliveObjects.Hero;
+import com.mygdx.templet.objects.staticObjects.Spike;
 import com.mygdx.templet.screens.textures.MainScreenTextures;
 import com.mygdx.templet.tools.DebugRendering;
 import com.mygdx.templet.main.Hunter;
@@ -75,13 +76,14 @@ class MainScreen extends ScreenAdapter {
     private int buttonIndex = 0;    //Tells us which button we're currently looking at in the main menu
 
     //=================================== Miscellaneous Vars =======================================
-    private final String[] menuButtonText = new String[]{"Restart", "Help", "Sound Off", "Main Menu", "Back", "Sound On"};
+    private final String[] menuButtonText = new String[]{"Controls", "Skins", "Sound Off", "Main Menu", "Back", "Sound On"};
     private Array<String> levelNames = new Array<>(); //Names of all the lvls in order
     private int tiledSelection;                       //Which tiled map is loaded in
     //================================ Set Up ======================================================
 
     private Hero hero;
     private final Array<Platform> platforms = new Array<>();
+    private final Array<Spike> spikes = new Array<>();
 
     /**
      * Purpose: Grabs the info from main screen that holds asset manager
@@ -137,6 +139,14 @@ class MainScreen extends ScreenAdapter {
             platforms.add(new Platform(platformsPositions.get(i).x, platformsPositions.get(i).y, platformsDimensions.get(i).x, platformsDimensions.get(i).y));
         }
 
+        //================================= Spikes =======================================
+        Array<Vector2> spikesPositions = tiledSetUp.getLayerCoordinates("Spikes");
+        Array<Vector2> spikesDimensions = tiledSetUp.getLayerDimensions("Spikes");
+        for(int i = 0; i < spikesPositions.size; i++){
+            spikes.add(new Spike(spikesPositions.get(i).x, spikesPositions.get(i).y,
+                    spikesDimensions.get(i).x, mainScreenTextures.spikeTexutre));
+        }
+
     }
 
     /**
@@ -180,7 +190,9 @@ class MainScreen extends ScreenAdapter {
      */
     private void debugRender(){
         debugRendering.startEnemyRender();
-        //TODO set up enemies to render
+        for(Spike spike : spikes){
+            spike.drawDebug(debugRendering.getShapeRenderEnemy());
+        }
         debugRendering.endEnemyRender();
 
         debugRendering.startUserRender();
@@ -217,8 +229,11 @@ class MainScreen extends ScreenAdapter {
     private void update(float delta){
         handleInput(delta);
         updateCamera();
+        hero.update(tiledSetUp.getLevelWidth(), tiledSetUp.getLevelHeight(), delta);
+        isColliding();
     }
 
+    //=================================== Input Handling ==========================================
 
     /**
      * Purpose: Central Input Handling function
@@ -254,12 +269,11 @@ class MainScreen extends ScreenAdapter {
         hero.setDucking(!hero.getIsJumping() && Gdx.input.isKeyPressed(Input.Keys.DOWN));
 
         //==================== Movement Horizontally ======================================
-        if (!hero.getIsDucking() && Gdx.input.isKeyPressed(Input.Keys.RIGHT))
+        if (hero.getIsDucking() && Gdx.input.isKeyPressed(Input.Keys.RIGHT))
         { hero.moveHorizontally(1); }
-
-
-        if (!hero.getIsDucking() &&  Gdx.input.isKeyPressed(Input.Keys.LEFT))
+        else if (hero.getIsDucking() &&  Gdx.input.isKeyPressed(Input.Keys.LEFT))
         { hero.moveHorizontally(-1); }
+        else{ hero.moveHorizontally(0); }
     }
 
     /**
@@ -341,11 +355,40 @@ class MainScreen extends ScreenAdapter {
          */
     }
 
-    /**
-     * Purpose: Actions that can only be done in developer mode, used for testing
-     */
-    private void handleDevInputs(){
+    //====================================== Collisions ============================================
+    private void isColliding(){
+        isCollidingPlatform();
+        isCollidingSpike();
+    }
 
+    /**
+     * Purpose: Check if it's touching any platforms
+     */
+    private void isCollidingPlatform() {
+        //Checks if there is ground below him
+        boolean hasGround = false;
+        for (int i = 0; i < platforms.size; i++) {
+            if(hero.updateCollision(platforms.get(i).getHitBox())){
+                hasGround = true;                //Tells us that he's standing
+                if(hero.getX() >= platforms.get(i).getX()
+                        && hero.getX() + hero.getWidth() <= platforms.get(i).getX() + platforms.get(i).getWidth()) {
+                    hero.setLastTouchedGround();     //Saves that position for respawn
+                }
+            }
+        }
+        //If there is no ground below Cole he should fall
+        if(!hasGround){hero.setFalling(true);}
+    }
+
+    /**
+     * Purpose: Check if it's touching any platforms
+     */
+    private void isCollidingSpike() {
+        for (int i = 0; i < spikes.size; i++) {
+            if(spikes.get(i).isColliding(hero.getHitBox())){
+                hero.touchedBadObject(-5);
+            }
+        }
     }
 
     /**
@@ -396,16 +439,30 @@ class MainScreen extends ScreenAdapter {
         batch.setProjectionMatrix(camera.projection);
         batch.setTransformMatrix(camera.view);
 
+        //======================== Draws ==============================
+        batch.begin();
+        if(developerMode){debugInfo();}        //If dev mode is on draw hit boxes and phone stats
+        drawBackground();
+        batch.end();
+
         tiledSetUp.drawTiledMap();
 
         //======================== Draws ==============================
         batch.begin();
         if(developerMode){debugInfo();}        //If dev mode is on draw hit boxes and phone stats
+        hero.drawAnimations(batch);
+        for(Spike spike : spikes){ spike.draw(batch); }
         batch.end();
 
         //=================== Draws the Menu Background =====================
         batch.begin();
-        drawPopUpMenu();
+        if(pausedFlag){
+            drawPopUpMenu();
+            if(!helpFlag) {
+                drawMainButtons();
+                drawButtonText();
+            }
+        }
         batch.end();
 
         //=================== Draws the Menu Buttons =========================
@@ -413,6 +470,19 @@ class MainScreen extends ScreenAdapter {
         //================= Draw Menu Button Text =============================
         batch.begin();
         batch.end();
+    }
+
+    /**
+     * Purpose: Draws the parallax background
+     */
+    private void drawBackground(){
+        batch.draw(mainScreenTextures.backgroundColor, xCameraDelta, yCameraDelta);
+        for(int i = 0; i < tiledSetUp.getLevelWidth()/WORLD_WIDTH + 1; i++){
+            batch.draw(mainScreenTextures.backgroundBack, xCameraDelta - xCameraDelta * 0.1f + WORLD_WIDTH *i, yCameraDelta);
+            batch.draw(mainScreenTextures.backgroundMid, xCameraDelta - xCameraDelta * 0.2f + WORLD_WIDTH *i, yCameraDelta);
+            batch.draw(mainScreenTextures.backgroundFront, xCameraDelta - xCameraDelta * 0.3f + WORLD_WIDTH *i, yCameraDelta);
+
+        }
     }
 
     //============================================== Draw Menus =====================================

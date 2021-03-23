@@ -12,12 +12,12 @@ public class AliveObjects extends GenericObjects {
 
     protected Vector2 velocity;
 
-    float animationFrameTime = 4;
+    float animationFrameTime = 8;
 
     protected Animation<TextureRegion> walkRightAnimation;
     protected Animation<TextureRegion> walkLeftAnimation;
 
-    protected boolean isFacingRight = true; //Tells us which way the person is facing
+    protected boolean isFacingRight = false; //Tells us which way the person is facing
 
     protected float animationRightTime = 0;
     protected float animationLeftTime = 0;

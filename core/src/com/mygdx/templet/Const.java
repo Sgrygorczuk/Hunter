@@ -46,6 +46,9 @@ public final class Const{
     public static final float HERO_WIDTH = 20;
     public static final float HERO_HEIGHT = 32;
 
+    public static final float FEET_HEAD_HEIGHT = 1f;
+
+
     public static final float UI_HEIGHT = 36;
 
     //======================== Movement Data ===========================

@@ -1,10 +1,13 @@
 package com.mygdx.templet.objects.aliveObjects;
 
+import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
+import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.Rectangle;
 
 import static com.mygdx.templet.Const.ACCELERATION;
+import static com.mygdx.templet.Const.FEET_HEAD_HEIGHT;
 import static com.mygdx.templet.Const.FRICTION;
 import static com.mygdx.templet.Const.GRAVITY;
 import static com.mygdx.templet.Const.HERO_HEIGHT;
@@ -27,6 +30,8 @@ public class Hero extends AliveObjects{
     private float relativeGravity;
     protected boolean touchedCeiling;
 
+    private Rectangle feetBox;
+    private Rectangle headBox;
 
     //Timer counting down until player can be hit again
     private static final float INVINCIBILITY_TIME = 1.5F;
@@ -51,7 +56,7 @@ public class Hero extends AliveObjects{
         super(x, y, spriteSheet);
 
         hitBox.width = HERO_WIDTH;
-        hitBox.height = HERO_HEIGHT;
+        hitBox.height = 32;
 
         relativeGravity = GRAVITY;
         velocity.y = -relativeGravity;
@@ -59,6 +64,9 @@ public class Hero extends AliveObjects{
         xAccel = ACCELERATION;
         xDecel = FRICTION;
         xMaxVel = MAX_VELOCITY;
+
+        feetBox = new Rectangle(hitBox.x, hitBox.y - FEET_HEAD_HEIGHT, hitBox.width/2f, FEET_HEAD_HEIGHT);
+        headBox = new Rectangle(hitBox.x, hitBox.y + hitBox.height + FEET_HEAD_HEIGHT, hitBox.width/2f, FEET_HEAD_HEIGHT);
     }
 
     /**
@@ -68,7 +76,6 @@ public class Hero extends AliveObjects{
     public void update(float levelWidth, float levelHeight, float delta){
         assertWorldBound(levelWidth, levelHeight);
         updateVelocityY();
-        decelerate();
 
         if(velocity.x > 0){
             animationLeftTime += delta;
@@ -123,8 +130,8 @@ public class Hero extends AliveObjects{
     }
 
     public void moveHorizontally(int direction){
-        if ((velocity.x < xMaxVel) && (velocity.x > -xMaxVel))
-            velocity.x += direction*xAccel;
+        if ((velocity.x < xMaxVel) && (velocity.x > -xMaxVel)) { velocity.x += direction * xAccel; }
+        else if(direction == 0){ velocity.x = 0; }
     }
 
     /**
@@ -134,6 +141,7 @@ public class Hero extends AliveObjects{
         isJumping = true;       //Tells us we're jumping
         isRising = true;        //Tells us we're going up
         initialY = hitBox.y;    //Grabs the initial place where we started so we can find the jump peak
+        landedFlag = false;
     }
 
     /**
@@ -158,9 +166,8 @@ public class Hero extends AliveObjects{
         lastTouchedGroundY = hitBox.y;
     }
 
-    public void touchedWater(){
-        takeDamage(20);
-
+    public void touchedBadObject(int damage){
+        takeDamage(damage);
         hitBox.x = lastTouchedGroundX;
         hitBox.y = lastTouchedGroundY;
     }
@@ -171,7 +178,7 @@ public class Hero extends AliveObjects{
      * Purpose: Have cole be at either full height or 2/3 height depending on if he's ducking
      */
     private void updateDucking(){
-        if(!isDucking){ hitBox.height = HERO_WIDTH; }
+        if(!isDucking){ hitBox.height = HERO_HEIGHT; }
         else{ hitBox.height = 2 * HERO_HEIGHT / 3f; }
     }
 
@@ -253,68 +260,61 @@ public class Hero extends AliveObjects{
      * @return tells us if there is any platform below Cole
      */
     public boolean updateCollision(Rectangle rectangle){
-        if(this.hitBox.overlaps(rectangle)){
-            //Vertical hitBox collision happens first otherwise he'll get set to the other size of the map
+        feetBox.x = hitBox.x + hitBox.width/4f;
+        feetBox.y = hitBox.y - FEET_HEAD_HEIGHT;
 
-            /* Breakdown of Collision
-              this.hitBox.y < rectangle.y + rectangle.height - checks if we're dipping into the box from the top
-              this.hitBox.y >= rectangle.y + rectangle.height * 0.8f - makes sure it's only the very top of the box we're going into
-                       We do rectangle.y + rectangle.height * 0.8f not (rectangle.y + rectangle.height) * 0.8f because () will have a lower value on
-                       lower platforms we only want to multiply the height so that the initial Y is still large
-              hitBox.x + hitBox.width > rectangle.x && hitBox.x < rectangle.x + rectangle.width - makes sure to only interact with this platform
-             */
-            //=============== On Top Of the Colliding Platform ====================
-            if(this.hitBox.y <= rectangle.y + rectangle.height
-                    && this.hitBox.y >= rectangle.y + rectangle.height * 0.9f){
-                landedFlag = true;
-                this.hitBox.y = rectangle.y + rectangle.height;
-                isJumping = false;  //Can jump again
-                isFalling = false;  //Is no longer falling
-                velocity.y = 0;
-            }
-            /* Breakdown of Collision
-              this.hitBox.y + this.hitBox.height > rectangle.y- checks if we're dipping into the box from the bottom
-              this.hitBox.y + this.hitBox.height * 0.8f < rectangle.y - makes sure that only on the bottom
-              hitBox.x + hitBox.width > rectangle.x && hitBox.x < rectangle.x + rectangle.width - makes sure to only interact with this platform
-             */
-            //=============== Below the Colliding Platform ====================
-            else if(this.hitBox.y + this.hitBox.height > rectangle.y
-                    && this.hitBox.y < rectangle.y
-                    && hitBox.x + hitBox.width >= rectangle.x + rectangle.width * 0.1f
-                    && hitBox.x <= rectangle.x + rectangle.width * 0.9f){
-                this.hitBox.y = rectangle.y - this.hitBox.height;
-            }
+        headBox.x = hitBox.x + hitBox.width/4f;
+        headBox.y = hitBox.y + hitBox.height + FEET_HEAD_HEIGHT;
 
-            /* Breakdown of Collision
-              this.hitBox.x + this.hitBox.width > rectangle.x - checks if we're dipping into the box from the left
-              hitBox.x < rectangle.x - makes sures we're coming from the left
-              !(this.hitBox.y >= rectangle.y + rectangle.height) - makes sure we don't do it when on top of the block
-              hitBox.y >= rectangle.y - so he doesn't teleports to edge of platform if he touches it from below
-             */
-            //=============== On the Left of the Colliding Platform ====================
-            if(this.hitBox.x + this.hitBox.width >= rectangle.x
+
+        //Vertical
+        if(feetBox.overlaps(rectangle)){
+            landedFlag = true;
+            this.hitBox.y = rectangle.y + rectangle.height;
+            isJumping = false;  //Can jump again
+            isFalling = false;  //Is no longer falling
+            velocity.y = 0;
+        }
+        if(headBox.overlaps(rectangle)){
+            this.hitBox.y = rectangle.y - this.hitBox.height;
+            isFalling = true;
+            isJumping = false;
+            isRising = false;
+            velocity.y = 0;
+        }
+
+        //Horizontal
+        if(hitBox.overlaps(rectangle) && !headBox.overlaps(rectangle)) {
+            if (this.hitBox.x + this.hitBox.width >= rectangle.x
                     && hitBox.x < rectangle.x
                     && !(this.hitBox.y >= rectangle.y + rectangle.height)
-                    && this.hitBox.y >= rectangle.y){
+                    && this.hitBox.y >= rectangle.y) {
                 this.hitBox.x = rectangle.x - this.hitBox.width;
                 velocity.x = 0; //Stops movement
             }
             //=============== On the Right of the Colliding Platform ====================
-            else if(this.hitBox.x <= rectangle.x + rectangle.width
+            else if (this.hitBox.x <= rectangle.x + rectangle.width
                     && this.hitBox.x > rectangle.x
                     && !(this.hitBox.y >= rectangle.y + rectangle.height)
-                    && this.hitBox.y >= rectangle.y){
+                    && this.hitBox.y >= rectangle.y) {
                 this.hitBox.x = rectangle.x + rectangle.width;
                 velocity.x = 0; //Stop movement
             }
         }
-        //Creates a second rectangle that's a little below Cole to see if there is any
-        //Platform below him
-        Rectangle fallCheckBox = new Rectangle(hitBox.x, hitBox.y - 1, hitBox.width, hitBox.height * 0.1f);
-        return fallCheckBox.overlaps(rectangle);
+
+        return feetBox.overlaps(rectangle);
     }
 
     //========================================= Drawing ============================================
+
+
+    @Override
+    public void drawDebug(ShapeRenderer shapeRenderer) {
+        System.out.println(hitBox.height);
+        //super.drawDebug(shapeRenderer);
+        shapeRenderer.rect(feetBox.x, feetBox.y, feetBox.width, feetBox.height);
+        shapeRenderer.rect(headBox.x, headBox.y, headBox.width, headBox.height);
+    }
 
     public void drawAnimations(SpriteBatch batch){
         TextureRegion currentFrame = spriteSheet[0][0];

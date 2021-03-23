@@ -8,22 +8,24 @@ com/mygdx/templet/screens/textures/MainScreenTextures.java
  com.mygdx.templet.screens.textures.MainScreenTextures
 com/mygdx/templet/Const.java
  com.mygdx.templet.Const
+com/mygdx/templet/objects/staticObjects/Spike.java
+ com.mygdx.templet.objects.staticObjects.Spike
 com/mygdx/templet/objects/GenericObjects.java
  com.mygdx.templet.objects.GenericObjects
-com/mygdx/templet/tools/DebugRendering.java
- com.mygdx.templet.tools.DebugRendering
+com/mygdx/templet/tools/TexturePackerTool.java
+ com.mygdx.templet.tools.TexturePackerTool
 com/mygdx/templet/tools/TiledSetUp.java
  com.mygdx.templet.tools.TiledSetUp
 com/mygdx/templet/main/Hunter.java
  com.mygdx.templet.main.Hunter
-com/mygdx/templet/tools/TexturePackerTool.java
- com.mygdx.templet.tools.TexturePackerTool
+com/mygdx/templet/screens/LoadingScreen.java
+ com.mygdx.templet.screens.LoadingScreen
 com/mygdx/templet/screens/textures/MenuScreenTextures.java
  com.mygdx.templet.screens.textures.MenuScreenTextures
 com/mygdx/templet/tools/TextAlignment.java
  com.mygdx.templet.tools.TextAlignment
-com/mygdx/templet/screens/MenuScreen.java
- com.mygdx.templet.screens.MenuScreen
+com/mygdx/templet/objects/aliveObjects/AliveObjects.java
+ com.mygdx.templet.objects.aliveObjects.AliveObjects
 com/mygdx/templet/objects/Platform.java
  com.mygdx.templet.objects.Platform
 com/mygdx/templet/screens/textures/CreditsScreenTextures.java
@@ -32,10 +34,10 @@ com/mygdx/templet/objects/staticObjects/staticObjects.java
  com.mygdx.templet.objects.staticObjects.staticObjects
 com/mygdx/templet/screens/textures/LoadingScreenTextures.java
  com.mygdx.templet.screens.textures.LoadingScreenTextures
-com/mygdx/templet/objects/aliveObjects/AliveObjects.java
- com.mygdx.templet.objects.aliveObjects.AliveObjects
-com/mygdx/templet/screens/LoadingScreen.java
- com.mygdx.templet.screens.LoadingScreen
+com/mygdx/templet/screens/MenuScreen.java
+ com.mygdx.templet.screens.MenuScreen
+com/mygdx/templet/tools/DebugRendering.java
+ com.mygdx.templet.tools.DebugRendering
 com/mygdx/templet/screens/MainScreen.java
  com.mygdx.templet.screens.MainScreen
 com/mygdx/templet/objects/aliveObjects/Hero.java
