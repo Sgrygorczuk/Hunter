@@ -9,8 +9,15 @@ public class MainScreenTextures {
     //============================================= Textures =======================================
     public Texture menuBackgroundTexture;   //Pop up menu to show menu buttons and Help screen
     public Texture controlsTexture;
+    public Texture eTexture;
+    public Texture qTexture;
 
-    public Texture spikeTexutre;
+    //=================== Physical Objects ==================
+    public Texture spikeTexture;
+    public Texture momTexture;
+    public Texture momPortTexture;
+    public Texture manTexture;
+    public Texture manPortTexture;
 
     //=================================== Background ===============================================
     public Texture backgroundColor;
@@ -23,6 +30,7 @@ public class MainScreenTextures {
     public TextureRegion[][] heroSpriteSheet;
 
     public TextureRegion[][] npcSpriteSheet;
+    public TextureRegion[][] childSpriteSheet;
 
     public MainScreenTextures(){ showTextures(); }
 
@@ -30,10 +38,20 @@ public class MainScreenTextures {
      * Purpose: Sets up all of the textures
      */
     private void showTextures(){
+        //=================================== UI ==========================================
         menuBackgroundTexture = new Texture(Gdx.files.internal("UI/BoarderBox.png"));
         controlsTexture = new Texture(Gdx.files.internal("UI/Instructions.png"));
+        eTexture = new Texture(Gdx.files.internal("Sprites/E.png"));
+        qTexture = new Texture(Gdx.files.internal("Sprites/Q.png"));
 
-        spikeTexutre = new Texture(Gdx.files.internal("Sprites/Spikes.png"));
+        //======================= Physical Objects ========================================
+        spikeTexture = new Texture(Gdx.files.internal("Sprites/Spikes.png"));
+
+        //========================= NPCs =================================================
+        momTexture = new Texture(Gdx.files.internal("Sprites/NPC/Mom.png"));
+        momPortTexture = new Texture(Gdx.files.internal("Sprites/NPC/MomPort.png"));
+        manTexture = new Texture(Gdx.files.internal("Sprites/NPC/Man.png"));
+        manPortTexture = new Texture(Gdx.files.internal("Sprites/NPC/ManPort.png"));
 
         //================================== Background ============================================
         backgroundColor = new Texture(Gdx.files.internal("Sprites/BackgroundColor.png"));
@@ -51,9 +69,15 @@ public class MainScreenTextures {
         heroSpriteSheet = new TextureRegion(heroTexturePath).split(
                 heroTexturePath.getWidth()/4, heroTexturePath.getHeight());
 
+
+        //================================== NPCs ==================================================
         Texture npcTexturePath = new Texture(Gdx.files.internal("Sprites/NPC.png"));
         npcSpriteSheet = new TextureRegion(npcTexturePath).split(
                 npcTexturePath.getWidth()/4, npcTexturePath.getHeight()/2);
+
+        Texture childTexturePath = new Texture(Gdx.files.internal("Sprites/Child.png"));
+        childSpriteSheet = new TextureRegion(childTexturePath).split(
+                childTexturePath.getWidth()/4, childTexturePath.getHeight());
 
     }
 

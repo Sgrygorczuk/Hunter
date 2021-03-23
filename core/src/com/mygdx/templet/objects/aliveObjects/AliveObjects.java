@@ -1,6 +1,7 @@
 package com.mygdx.templet.objects.aliveObjects;
 
 import com.badlogic.gdx.graphics.g2d.Animation;
+import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.Vector2;
 import com.mygdx.templet.objects.GenericObjects;
@@ -51,5 +52,23 @@ public class AliveObjects extends GenericObjects {
 
     public int getMaxHealth(){return maxHealth;}
     public int getCurrentHealth(){return currentHealth;}
+
+    public void drawAnimations(SpriteBatch batch){
+        TextureRegion currentFrame = spriteSheet[0][0];
+        //=========================== Cole ============================================
+        if (isFacingRight) {
+            if (velocity.x != 0) {
+                currentFrame = walkRightAnimation.getKeyFrame(animationRightTime);
+            }
+        }
+        else if (!isFacingRight) {
+            if (velocity.x != 0) {
+                currentFrame = walkLeftAnimation.getKeyFrame(animationLeftTime);
+            }
+        }
+
+        batch.draw(currentFrame, isFacingRight ? hitBox.x + currentFrame.getRegionWidth() : hitBox.x, hitBox.y, isFacingRight ? -currentFrame.getRegionWidth() : currentFrame.getRegionWidth(), currentFrame.getRegionHeight());
+
+    }
 
 }

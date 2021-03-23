@@ -140,6 +140,41 @@ public class TiledSetUp {
     }
 
     /**
+     * Purpose: Allow user to get coordinates of all the objects in that layer
+     * @param layerName tells us the name of the layer we want to pull from
+     * @return a String
+     */
+    public Array<String> getLayerNames(String layerName) {
+        //Grab the layer from tiled map
+        MapLayer mapLayer = tiledMap.getLayers().get(layerName);
+        Array<String> names = new Array<>();
+
+        //Grabs the coordinates for each instance of that object in the map
+        for (MapObject mapObject : mapLayer.getObjects()) {
+            names.add(mapObject.getName());
+        }
+        return names;
+    }
+
+    /**
+     * Purpose:
+     * @param layerName tells us the name of the layer we want to pull from
+     * @return a String
+     */
+    public Array<Object> getLayerDialogue(String layerName) {
+        //Grab the layer from tiled map
+        MapLayer mapLayer = tiledMap.getLayers().get(layerName);
+        Array<Object> dialogues = new Array<>();
+
+        //Grabs the coordinates for each instance of that object in the map
+        for (MapObject mapObject : mapLayer.getObjects()) {
+            dialogues.add(mapObject.getProperties().get("Dialogue"));
+        }
+        return dialogues;
+    }
+
+
+    /**
      * Purpose: Allow user to get dimensions of the object
      * @param layerName tells us the name of the layer we want to pull from
      * @return a Vector2 of width and height

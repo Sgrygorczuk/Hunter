@@ -1,6 +1,5 @@
 package com.mygdx.templet.objects.aliveObjects;
 
-import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
@@ -16,12 +15,6 @@ import static com.mygdx.templet.Const.JUMP_PEAK;
 import static com.mygdx.templet.Const.MAX_VELOCITY;
 
 public class Hero extends AliveObjects{
-    private boolean isJumping = false;    //Used to tell that it's not touching a platform
-    private boolean isFalling = false;    //Used to tell if Cole if falling off a platform
-    private boolean isRising = false;     //Used to create a arc for the jump
-    private boolean isDucking = false;    //Tells us if cole is ducking
-    private boolean invincibilityFlag = false; //Tells us if he's invincible
-    protected boolean flashing = false;      //Tells the animation to flash or not
     private float initialY;               //Where the jump starts from
 
     private float lastTouchedGroundX;
@@ -41,7 +34,13 @@ public class Hero extends AliveObjects{
     private static final float FLASHING_TIME = 0.1F;
     private float flashingTimer = FLASHING_TIME;
 
-    public boolean landedFlag = false;
+    //=============================== Flags ====================================
+    private boolean isJumping = false;    //Used to tell that it's not touching a platform
+    private boolean isFalling = false;    //Used to tell if Cole if falling off a platform
+    private boolean isRising = false;     //Used to create a arc for the jump
+    private boolean isDucking = false;    //Tells us if cole is ducking
+    private boolean invincibilityFlag = false; //Tells us if he's invincible
+    private boolean flashing = false;      //Tells the animation to flash or not
 
     /* =========================== Movement Variables =========================== */
 
@@ -141,7 +140,6 @@ public class Hero extends AliveObjects{
         isJumping = true;       //Tells us we're jumping
         isRising = true;        //Tells us we're going up
         initialY = hitBox.y;    //Grabs the initial place where we started so we can find the jump peak
-        landedFlag = false;
     }
 
     /**
@@ -269,7 +267,6 @@ public class Hero extends AliveObjects{
 
         //Vertical
         if(feetBox.overlaps(rectangle)){
-            landedFlag = true;
             this.hitBox.y = rectangle.y + rectangle.height;
             isJumping = false;  //Can jump again
             isFalling = false;  //Is no longer falling

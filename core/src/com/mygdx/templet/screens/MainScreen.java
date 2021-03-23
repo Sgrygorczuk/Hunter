@@ -12,16 +12,13 @@ import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.Vector2;
-import com.badlogic.gdx.scenes.scene2d.InputEvent;
-import com.badlogic.gdx.scenes.scene2d.Stage;
-import com.badlogic.gdx.scenes.scene2d.ui.ImageButton;
-import com.badlogic.gdx.scenes.scene2d.utils.ActorGestureListener;
-import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.viewport.StretchViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
 import com.mygdx.templet.objects.Platform;
 import com.mygdx.templet.objects.aliveObjects.Hero;
+import com.mygdx.templet.objects.aliveObjects.WalkingNPC;
+import com.mygdx.templet.objects.staticObjects.TalkingNPC;
 import com.mygdx.templet.objects.staticObjects.Spike;
 import com.mygdx.templet.screens.textures.MainScreenTextures;
 import com.mygdx.templet.tools.DebugRendering;
@@ -30,8 +27,6 @@ import com.mygdx.templet.tools.MusicControl;
 import com.mygdx.templet.tools.TextAlignment;
 import com.mygdx.templet.tools.TiledSetUp;
 
-import static com.mygdx.templet.Const.INSTRUCTIONS_Y_START;
-import static com.mygdx.templet.Const.INSTRUCTION_BUTTON_Y;
 import static com.mygdx.templet.Const.NUM_BUTTONS_MAIN_SCREEN;
 import static com.mygdx.templet.Const.TEXT_OFFSET;
 import static com.mygdx.templet.Const.DEVELOPER_TEXT_X;
@@ -74,6 +69,8 @@ class MainScreen extends ScreenAdapter {
     private float xCameraDelta = 0;             //Keeps track of how far the camera has moved (to update menus)
     private float yCameraDelta = 0;             //Keeps track of how far the camera has moved (to update menus)
     private int buttonIndex = 0;    //Tells us which button we're currently looking at in the main menu
+    private boolean isTouchingNPC = false; //Tells is if we're near an NPC
+    private boolean isTalking = false;
 
     //=================================== Miscellaneous Vars =======================================
     private final String[] menuButtonText = new String[]{"Controls", "Skins", "Sound Off", "Main Menu", "Back", "Sound On"};
@@ -82,8 +79,16 @@ class MainScreen extends ScreenAdapter {
     //================================ Set Up ======================================================
 
     private Hero hero;
+    //=========================== Physical Objects =====================
     private final Array<Platform> platforms = new Array<>();
     private final Array<Spike> spikes = new Array<>();
+
+    //========================== NPCs ==================================
+    private final Array<TalkingNPC> talkingNPCS = new Array<>();
+    private final Array<WalkingNPC> walkingNPCS = new Array<>();
+    private TalkingNPC focusedOnNPC;
+
+
 
     /**
      * Purpose: Grabs the info from main screen that holds asset manager
@@ -144,10 +149,73 @@ class MainScreen extends ScreenAdapter {
         Array<Vector2> spikesDimensions = tiledSetUp.getLayerDimensions("Spikes");
         for(int i = 0; i < spikesPositions.size; i++){
             spikes.add(new Spike(spikesPositions.get(i).x, spikesPositions.get(i).y,
-                    spikesDimensions.get(i).x, mainScreenTextures.spikeTexutre));
+                    spikesDimensions.get(i).x, mainScreenTextures.spikeTexture));
+        }
+
+        //================================= NPCs =============================================
+        Array<Vector2> talkingNPCSPositions = tiledSetUp.getLayerCoordinates("TalkingNPC");
+        Array<String> talkingNPCSNames = tiledSetUp.getLayerNames("TalkingNPC");
+        Array<Object> talkingNPCSDialogues = tiledSetUp.getLayerDialogue("TalkingNPC");
+        for(int i = 0; i < talkingNPCSPositions.size; i++){
+            talkingNPCS.add(new TalkingNPC(talkingNPCSPositions.get(i).x,
+                    talkingNPCSPositions.get(i).y, getNPCTexture(talkingNPCSNames.get(i)),
+                    getNPCPortTexture(talkingNPCSNames.get(i)), (String) talkingNPCSDialogues.get(i),
+                    talkingNPCSNames.get(i)));
+        }
+
+        Array<Vector2> walkingNPCSPositions = tiledSetUp.getLayerCoordinates("WalkingNPC");
+        Array<Vector2> walkingNPCSDimensions = tiledSetUp.getLayerDimensions("WalkingNPC");
+        Array<String> walkingNPCSNames = tiledSetUp.getLayerNames("WalkingNPC");
+        for(int i = 0; i < walkingNPCSPositions.size; i++){
+            walkingNPCS.add(new WalkingNPC(walkingNPCSPositions.get(i).x,
+                    walkingNPCSPositions.get(i).y, walkingNPCSDimensions.get(i).x,
+                    getNPCSpriteSheet(walkingNPCSNames.get(i))));
         }
 
     }
+
+    private Texture getNPCTexture(String name){
+        switch (name){
+            case "Mom":{
+                return mainScreenTextures.momTexture;
+            }
+            case "Man":{
+                return mainScreenTextures.manTexture;
+            }
+            default:{
+                return mainScreenTextures.momTexture;
+            }
+        }
+    }
+
+
+    private Texture getNPCPortTexture(String name){
+        switch (name){
+            case "Mom":{
+                return mainScreenTextures.momPortTexture;
+            }
+            case "Man":{
+                return mainScreenTextures.manPortTexture;
+            }
+            default:{
+                return mainScreenTextures.momPortTexture;
+            }
+        }
+    }
+
+    private TextureRegion[][] getNPCSpriteSheet(String name){
+        switch (name){
+            case "Child":{
+                return mainScreenTextures.childSpriteSheet;
+            }
+            default:{
+                return mainScreenTextures.childSpriteSheet;
+            }
+        }
+    }
+
+
+
 
     /**
      * Purpose: Sets up the camera through which all the objects are view through
@@ -206,7 +274,12 @@ class MainScreen extends ScreenAdapter {
         debugRendering.endBackgroundRender();
 
         debugRendering.startCollectibleRender();
-        //TODO set up collectibles to render
+        for(TalkingNPC talkingNPC : talkingNPCS){
+            talkingNPC.drawDebug(debugRendering.getShapeRendererCollectible());
+        }
+        for(WalkingNPC walkingNPC : walkingNPCS){
+            walkingNPC.drawDebug(debugRendering.getShapeRendererCollectible());
+        }
         debugRendering.endCollectibleRender();
     }
 
@@ -231,6 +304,8 @@ class MainScreen extends ScreenAdapter {
         updateCamera();
         hero.update(tiledSetUp.getLevelWidth(), tiledSetUp.getLevelHeight(), delta);
         isColliding();
+
+        for(WalkingNPC walkingNPC : walkingNPCS){ walkingNPC.update(delta); }
     }
 
     //=================================== Input Handling ==========================================
@@ -260,20 +335,34 @@ class MainScreen extends ScreenAdapter {
      * Purpose: Actions that can only be done in developer mode, used for testing
      */
     private void handleInputs(float delta){
-        //======================== Movement Vertically ====================================
-        if(!hero.getIsJumping() && !hero.getIsFalling()  && Gdx.input.isKeyJustPressed(Input.Keys.UP)){
-            //playSFX("Jump");
-            hero.jump();
+        if(!isTalking) {
+            //======================== Movement Vertically ====================================
+            if (!hero.getIsJumping() && !hero.getIsFalling() && Gdx.input.isKeyJustPressed(Input.Keys.UP)) {
+                //playSFX("Jump");
+                hero.jump();
+            }
+
+            hero.setDucking(!hero.getIsJumping() && Gdx.input.isKeyPressed(Input.Keys.DOWN));
+
+            //==================== Movement Horizontally ======================================
+            if (hero.getIsDucking() && Gdx.input.isKeyPressed(Input.Keys.RIGHT)) {
+                hero.moveHorizontally(1);
+            } else if (hero.getIsDucking() && Gdx.input.isKeyPressed(Input.Keys.LEFT)) {
+                hero.moveHorizontally(-1);
+            } else {
+                hero.moveHorizontally(0);
+            }
+
+            if (isTouchingNPC && Gdx.input.isKeyJustPressed(Input.Keys.E)){
+                isTalking = true;
+            }
+        }
+        else{
+            if (Gdx.input.isKeyJustPressed(Input.Keys.E)){
+                isTalking = false;
+            }
         }
 
-        hero.setDucking(!hero.getIsJumping() && Gdx.input.isKeyPressed(Input.Keys.DOWN));
-
-        //==================== Movement Horizontally ======================================
-        if (hero.getIsDucking() && Gdx.input.isKeyPressed(Input.Keys.RIGHT))
-        { hero.moveHorizontally(1); }
-        else if (hero.getIsDucking() &&  Gdx.input.isKeyPressed(Input.Keys.LEFT))
-        { hero.moveHorizontally(-1); }
-        else{ hero.moveHorizontally(0); }
     }
 
     /**
@@ -359,6 +448,7 @@ class MainScreen extends ScreenAdapter {
     private void isColliding(){
         isCollidingPlatform();
         isCollidingSpike();
+        isCollidingTalkingNPC();
     }
 
     /**
@@ -381,12 +471,25 @@ class MainScreen extends ScreenAdapter {
     }
 
     /**
-     * Purpose: Check if it's touching any platforms
+     * Purpose: Check if it's touching any spikes if they are send them back and give damage
      */
     private void isCollidingSpike() {
         for (int i = 0; i < spikes.size; i++) {
             if(spikes.get(i).isColliding(hero.getHitBox())){
                 hero.touchedBadObject(-5);
+            }
+        }
+    }
+
+    /**
+     * Purpose: Check if it's touching any platforms
+     */
+    private void isCollidingTalkingNPC() {
+        isTouchingNPC = false;
+        for (int i = 0; i < talkingNPCS.size; i++) {
+            if(talkingNPCS.get(i).isColliding(hero.getHitBox())){
+                isTouchingNPC = true;
+                focusedOnNPC = talkingNPCS.get(i);
             }
         }
     }
@@ -450,8 +553,15 @@ class MainScreen extends ScreenAdapter {
         //======================== Draws ==============================
         batch.begin();
         if(developerMode){debugInfo();}        //If dev mode is on draw hit boxes and phone stats
+        for(TalkingNPC talkingNPC : talkingNPCS){ talkingNPC.draw(batch); }
+        for(WalkingNPC walkingNPC : walkingNPCS){ walkingNPC.drawAnimations(batch); }
         hero.drawAnimations(batch);
+        drawAction();
         for(Spike spike : spikes){ spike.draw(batch); }
+
+        if(isTalking){
+            drawTalkingMenu();
+        }
         batch.end();
 
         //=================== Draws the Menu Background =====================
@@ -485,7 +595,25 @@ class MainScreen extends ScreenAdapter {
         }
     }
 
+    /**
+     * Draws the action hero can take when near pole/ledge or a downed person 
+     */
+    private void drawAction(){
+        if(isTouchingNPC){
+            batch.draw(mainScreenTextures.eTexture, hero.getX() + mainScreenTextures.eTexture.getWidth()/2f,
+                    hero.getY() + hero.getHeight() + 5 + mainScreenTextures.eTexture.getHeight()/2f  );
+        }
+    }
+
     //============================================== Draw Menus =====================================
+
+    private void drawTalkingMenu(){
+        batch.draw(mainScreenTextures.menuBackgroundTexture, xCameraDelta + 5, 170, WORLD_WIDTH - 10, 70);
+        focusedOnNPC.drawSpeech(batch, bitmapFont, xCameraDelta, yCameraDelta);
+        batch.draw(mainScreenTextures.eTexture, WORLD_WIDTH - 27 + xCameraDelta, 175);
+    }
+
+
     /**
      * Purpose: Draws the menu background and instructions
      */
