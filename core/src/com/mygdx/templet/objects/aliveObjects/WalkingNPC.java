@@ -18,6 +18,7 @@ public class WalkingNPC extends AliveObjects{
         animationFrameTime = 4;
     }
 
+
     public void update(float delta){
 
         if(!isFacingRight){ velocity.x = 1; }

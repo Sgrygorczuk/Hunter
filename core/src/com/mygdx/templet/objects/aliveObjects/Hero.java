@@ -1,5 +1,6 @@
 package com.mygdx.templet.objects.aliveObjects;
 
+import com.badlogic.gdx.graphics.g2d.Animation;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
@@ -11,6 +12,7 @@ import static com.mygdx.templet.Const.FRICTION;
 import static com.mygdx.templet.Const.GRAVITY;
 import static com.mygdx.templet.Const.HERO_HEIGHT;
 import static com.mygdx.templet.Const.HERO_WIDTH;
+import static com.mygdx.templet.Const.JUMP_INC;
 import static com.mygdx.templet.Const.JUMP_PEAK;
 import static com.mygdx.templet.Const.MAX_VELOCITY;
 
@@ -23,8 +25,10 @@ public class Hero extends AliveObjects{
     private float relativeGravity;
     protected boolean touchedCeiling;
 
-    private Rectangle feetBox;
-    private Rectangle headBox;
+    private final Rectangle feetBox;
+    private final Rectangle headBox;
+    private Rectangle attackHitBox;
+
 
     //Timer counting down until player can be hit again
     private static final float INVINCIBILITY_TIME = 1.5F;
@@ -38,16 +42,21 @@ public class Hero extends AliveObjects{
     private boolean isJumping = false;    //Used to tell that it's not touching a platform
     private boolean isFalling = false;    //Used to tell if Cole if falling off a platform
     private boolean isRising = false;     //Used to create a arc for the jump
+    private boolean isAttacking = false;
     private boolean isDucking = false;    //Tells us if cole is ducking
     private boolean invincibilityFlag = false; //Tells us if he's invincible
     private boolean flashing = false;      //Tells the animation to flash or not
 
     /* =========================== Movement Variables =========================== */
+    float timer = 0.75f;
+    private float peak;
 
-    protected float yAccel;     //value of jump speed
-    protected float xAccel;     //value of increased speed for chosen direction
-    protected float xDecel;     //value of decreased speed for chosen direction
-    protected float xMaxVel;    //maximum x velocity allowed
+    private Animation<TextureRegion> attackAnimation;
+    //Timer counting down until we turn the draw function on/Off
+    private static final float ATTACK_TIME = 3/8f;
+    private float attackTime = ATTACK_TIME;
+    private float animationAttackTime = 0;
+
 
     //============================ Constructor ========================================
 
@@ -58,14 +67,17 @@ public class Hero extends AliveObjects{
         hitBox.height = 32;
 
         relativeGravity = GRAVITY;
-        velocity.y = -relativeGravity;
-        yAccel = relativeGravity;
-        xAccel = ACCELERATION;
-        xDecel = FRICTION;
-        xMaxVel = MAX_VELOCITY;
 
-        feetBox = new Rectangle(hitBox.x, hitBox.y - FEET_HEAD_HEIGHT, hitBox.width/2f, FEET_HEAD_HEIGHT);
+        attackHitBox = new Rectangle(hitBox.x, hitBox.y + hitBox.height/2f, hitBox.width*2, hitBox.y);
+        feetBox = new Rectangle(hitBox.x + hitBox.width + 0.15f, hitBox.y - FEET_HEAD_HEIGHT, hitBox.width * 0.7f, FEET_HEAD_HEIGHT);
         headBox = new Rectangle(hitBox.x, hitBox.y + hitBox.height + FEET_HEAD_HEIGHT, hitBox.width/2f, FEET_HEAD_HEIGHT);
+
+        setUpAttackAnimation();
+    }
+
+    protected void setUpAttackAnimation(){
+        attackAnimation =new Animation<TextureRegion>(1/8f, spriteSheet[1][0], spriteSheet[1][1], spriteSheet[1][2]);
+        attackAnimation.setPlayMode(Animation.PlayMode.LOOP);
     }
 
     /**
@@ -76,6 +88,7 @@ public class Hero extends AliveObjects{
         assertWorldBound(levelWidth, levelHeight);
         updateVelocityY();
 
+
         if(velocity.x > 0){
             animationLeftTime += delta;
             isFacingRight = false;
@@ -85,10 +98,23 @@ public class Hero extends AliveObjects{
             isFacingRight = true;
         }
 
+        if(isAttacking) {
+            animationAttackTime += delta;
+            attackTime -= delta;
+            if(attackTime < 0){
+                attackTime = ATTACK_TIME;
+                isAttacking = false;
+            }
+        }
+
+
         updateDucking();
 
         hitBox.y += velocity.y;
         hitBox.x += velocity.x;
+
+        attackHitBox.x = hitBox.x;
+        attackHitBox.width = hitBox.y + hitBox.height/2f;
     }
 
     //=============================== Movement =============================================
@@ -100,38 +126,31 @@ public class Hero extends AliveObjects{
         //=================== Player Initiated Jumping============
         if(isJumping) {
             //Is rising towards peak
-            if (isRising && hitBox.y < initialY + JUMP_PEAK) { velocity.y += relativeGravity/2f; }
+            if (isRising && hitBox.y < initialY + peak) {
+                velocity.y = (float) (10 * timer);
+                timer += timer * .1f;
+            }
             //Checks if we reached peaked or Cole hit something above him
-            else if (isRising) { isRising = false; }
+            else if (isRising) {
+                isRising = false;
+                timer = 0.75f;
+                peak = 0;
+            }
             //Starts falling back down
-            else if (velocity.y > -relativeGravity) { velocity.y = -relativeGravity; }
+            else if (velocity.y > -relativeGravity) { velocity.y -= (relativeGravity + velocity.y * 0.1f); }
         }
         //================== Player Walked Off A Platform ===========
         else if(isFalling) {
-            if (velocity.y > -relativeGravity) { velocity.y = -relativeGravity; }
+            if (velocity.y > -relativeGravity) { velocity.y -= (relativeGravity + velocity.y * 0.1f); }
         }
         //==================== Is Standing on a Platform =============
         else{
             velocity.y = 0;
+            peak = 0;
         }
     }
 
-    private void decelerate(){
-        float deceleration = xDecel;
-
-        if (velocity.x > deceleration)
-            velocity.x = velocity.x - deceleration;
-        else if (velocity.x < -deceleration)
-            velocity.x = velocity.x + deceleration;
-        else
-            velocity.x = 0;
-
-    }
-
-    public void moveHorizontally(int direction){
-        if ((velocity.x < xMaxVel) && (velocity.x > -xMaxVel)) { velocity.x += direction * xAccel; }
-        else if(direction == 0){ velocity.x = 0; }
-    }
+    public void moveHorizontally(float velocity){ this.velocity.x = velocity; }
 
     /**
      * Purpose: Initiate the Player jump action
@@ -140,6 +159,11 @@ public class Hero extends AliveObjects{
         isJumping = true;       //Tells us we're jumping
         isRising = true;        //Tells us we're going up
         initialY = hitBox.y;    //Grabs the initial place where we started so we can find the jump peak
+        peak = JUMP_INC;
+    }
+
+    public void jumpExt(){
+        if(peak <= JUMP_PEAK){ peak += JUMP_INC; }
     }
 
     /**
@@ -215,6 +239,14 @@ public class Hero extends AliveObjects{
 
     public void setInvincibility(boolean invincibility){this.invincibilityFlag = invincibility;}
 
+    public void attack(){
+        isAttacking = true;
+    }
+
+    public boolean isAttacking(){ return isAttacking; }
+
+    public Rectangle getAttackHitBox(){return attackHitBox;}
+
     /* ============================ Utility Functions =========================== */
 
     /**
@@ -258,12 +290,11 @@ public class Hero extends AliveObjects{
      * @return tells us if there is any platform below Cole
      */
     public boolean updateCollision(Rectangle rectangle){
-        feetBox.x = hitBox.x + hitBox.width/4f;
+        feetBox.x = hitBox.x + hitBox.width * 0.15f;
         feetBox.y = hitBox.y - FEET_HEAD_HEIGHT;
 
         headBox.x = hitBox.x + hitBox.width/4f;
         headBox.y = hitBox.y + hitBox.height + FEET_HEAD_HEIGHT;
-
 
         //Vertical
         if(feetBox.overlaps(rectangle)){
@@ -272,6 +303,7 @@ public class Hero extends AliveObjects{
             isFalling = false;  //Is no longer falling
             velocity.y = 0;
         }
+
         if(headBox.overlaps(rectangle)){
             this.hitBox.y = rectangle.y - this.hitBox.height;
             isFalling = true;
@@ -299,6 +331,8 @@ public class Hero extends AliveObjects{
             }
         }
 
+
+
         return feetBox.overlaps(rectangle);
     }
 
@@ -307,17 +341,17 @@ public class Hero extends AliveObjects{
 
     @Override
     public void drawDebug(ShapeRenderer shapeRenderer) {
-        System.out.println(hitBox.height);
-        //super.drawDebug(shapeRenderer);
-        shapeRenderer.rect(feetBox.x, feetBox.y, feetBox.width, feetBox.height);
-        shapeRenderer.rect(headBox.x, headBox.y, headBox.width, headBox.height);
+        shapeRenderer.rect(attackHitBox.x, attackHitBox.y, attackHitBox.width, attackHitBox.height);
     }
 
     public void drawAnimations(SpriteBatch batch){
         TextureRegion currentFrame = spriteSheet[0][0];
         if(!flashing) {
             //=========================== Cole ============================================
-            if (isFacingRight) {
+            if(isAttacking){
+                currentFrame = attackAnimation.getKeyFrame(animationAttackTime);
+            }
+            else if (isFacingRight) {
                 if (velocity.x != 0) {
                     currentFrame = walkRightAnimation.getKeyFrame(animationRightTime);
                 }

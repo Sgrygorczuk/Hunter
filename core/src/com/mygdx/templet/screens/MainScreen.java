@@ -16,7 +16,10 @@ import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.viewport.StretchViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
 import com.mygdx.templet.objects.Platform;
+import com.mygdx.templet.objects.aliveObjects.Dummy;
+import com.mygdx.templet.objects.aliveObjects.Enemy;
 import com.mygdx.templet.objects.aliveObjects.Hero;
+import com.mygdx.templet.objects.aliveObjects.Pet;
 import com.mygdx.templet.objects.aliveObjects.WalkingNPC;
 import com.mygdx.templet.objects.staticObjects.TalkingNPC;
 import com.mygdx.templet.objects.staticObjects.Spike;
@@ -27,6 +30,9 @@ import com.mygdx.templet.tools.MusicControl;
 import com.mygdx.templet.tools.TextAlignment;
 import com.mygdx.templet.tools.TiledSetUp;
 
+import java.util.ArrayList;
+
+import static com.mygdx.templet.Const.HERO_X_VELOCITY;
 import static com.mygdx.templet.Const.NUM_BUTTONS_MAIN_SCREEN;
 import static com.mygdx.templet.Const.TEXT_OFFSET;
 import static com.mygdx.templet.Const.DEVELOPER_TEXT_X;
@@ -71,11 +77,19 @@ class MainScreen extends ScreenAdapter {
     private int buttonIndex = 0;    //Tells us which button we're currently looking at in the main menu
     private boolean isTouchingNPC = false; //Tells is if we're near an NPC
     private boolean isTalking = false;
+    private boolean letGoJump = true;
+    private boolean cameraPan = false;
 
     //=================================== Miscellaneous Vars =======================================
     private final String[] menuButtonText = new String[]{"Controls", "Skins", "Sound Off", "Main Menu", "Back", "Sound On"};
     private Array<String> levelNames = new Array<>(); //Names of all the lvls in order
     private int tiledSelection;                       //Which tiled map is loaded in
+
+    //Timer counting down until player can be hit again
+    private static final float POST_FALL_TIME = 0.3F;
+    private float postFallTime = POST_FALL_TIME;
+    private boolean canPostFallJump = true;
+
     //================================ Set Up ======================================================
 
     private Hero hero;
@@ -86,8 +100,11 @@ class MainScreen extends ScreenAdapter {
     //========================== NPCs ==================================
     private final Array<TalkingNPC> talkingNPCS = new Array<>();
     private final Array<WalkingNPC> walkingNPCS = new Array<>();
+    private final Array<Pet> pets = new Array<>();
     private TalkingNPC focusedOnNPC;
 
+    //========================= Enemies =================================
+    private final Array<Enemy> enemies = new Array<>();
 
 
     /**
@@ -98,7 +115,7 @@ class MainScreen extends ScreenAdapter {
         this.hunter = hunter;
 
         this.tiledSelection = tiledSelection;
-        levelNames.add("Tiled/MapPlaceHolder.tmx");
+        levelNames.add("Tiled/Town.tmx");
     }
 
 
@@ -157,59 +174,61 @@ class MainScreen extends ScreenAdapter {
         Array<String> talkingNPCSNames = tiledSetUp.getLayerNames("TalkingNPC");
         Array<Object> talkingNPCSDialogues = tiledSetUp.getLayerDialogue("TalkingNPC");
         for(int i = 0; i < talkingNPCSPositions.size; i++){
-            talkingNPCS.add(new TalkingNPC(talkingNPCSPositions.get(i).x,
-                    talkingNPCSPositions.get(i).y, getNPCTexture(talkingNPCSNames.get(i)),
-                    getNPCPortTexture(talkingNPCSNames.get(i)), (String) talkingNPCSDialogues.get(i),
-                    talkingNPCSNames.get(i)));
+            addNPCTexture(talkingNPCSNames.get(i), talkingNPCSPositions.get(i), talkingNPCSDialogues.get(i));
         }
 
         Array<Vector2> walkingNPCSPositions = tiledSetUp.getLayerCoordinates("WalkingNPC");
         Array<Vector2> walkingNPCSDimensions = tiledSetUp.getLayerDimensions("WalkingNPC");
         Array<String> walkingNPCSNames = tiledSetUp.getLayerNames("WalkingNPC");
         for(int i = 0; i < walkingNPCSPositions.size; i++){
-            walkingNPCS.add(new WalkingNPC(walkingNPCSPositions.get(i).x,
-                    walkingNPCSPositions.get(i).y, walkingNPCSDimensions.get(i).x,
-                    getNPCSpriteSheet(walkingNPCSNames.get(i))));
+            addWalkingNPC(walkingNPCSNames.get(i), walkingNPCSPositions.get(i), walkingNPCSDimensions.get(i));
+        }
+
+        //================================ Enemies =================================================
+        Array<Vector2> enemyPositions = tiledSetUp.getLayerCoordinates("Enemy");
+        Array<String> enemyNames = tiledSetUp.getLayerNames("Enemy");
+        for(int i = 0; i < enemyPositions.size; i++){
+            addEnemyType(enemyNames.get(i), enemyPositions.get(i));
         }
 
     }
 
-    private Texture getNPCTexture(String name){
+    private void addNPCTexture(String name, Vector2 position, Object dialogue){
         switch (name){
             case "Mom":{
-                return mainScreenTextures.momTexture;
+                talkingNPCS.add(new TalkingNPC(position.x, position.y, mainScreenTextures.momTexture,
+                        mainScreenTextures.momPortTexture, (String) dialogue, name));
+                break;
             }
             case "Man":{
-                return mainScreenTextures.manTexture;
-            }
-            default:{
-                return mainScreenTextures.momTexture;
+                talkingNPCS.add(new TalkingNPC(position.x, position.y, mainScreenTextures.manTexture,
+                        mainScreenTextures.manPortTexture, (String) dialogue, name));
+                break;
             }
         }
     }
 
 
-    private Texture getNPCPortTexture(String name){
-        switch (name){
-            case "Mom":{
-                return mainScreenTextures.momPortTexture;
-            }
-            case "Man":{
-                return mainScreenTextures.manPortTexture;
-            }
-            default:{
-                return mainScreenTextures.momPortTexture;
-            }
-        }
-    }
-
-    private TextureRegion[][] getNPCSpriteSheet(String name){
+    private void addWalkingNPC(String name, Vector2 position, Vector2 dimensions){
         switch (name){
             case "Child":{
-                return mainScreenTextures.childSpriteSheet;
+                walkingNPCS.add(new WalkingNPC(position.x, position.y, dimensions.x, mainScreenTextures.childSpriteSheet));
+                break;
+            }
+            case "Pet":{
+                pets.add(new Pet(position.x, position.y, mainScreenTextures.petSpriteSheet));
+                break;
+            }
+        }
+    }
+
+    private void addEnemyType(String name, Vector2 position){
+        switch (name){
+            case "Dummy":{
+                enemies.add(new Dummy(position.x, position.y, mainScreenTextures.dummySpriteSheet));
             }
             default:{
-                return mainScreenTextures.childSpriteSheet;
+                enemies.add(new Dummy(position.x, position.y, mainScreenTextures.dummySpriteSheet));
             }
         }
     }
@@ -261,6 +280,9 @@ class MainScreen extends ScreenAdapter {
         for(Spike spike : spikes){
             spike.drawDebug(debugRendering.getShapeRenderEnemy());
         }
+        for(Enemy enemy : enemies){
+            enemy.drawDebug(debugRendering.getShapeRenderEnemy());
+        }
         debugRendering.endEnemyRender();
 
         debugRendering.startUserRender();
@@ -279,6 +301,9 @@ class MainScreen extends ScreenAdapter {
         }
         for(WalkingNPC walkingNPC : walkingNPCS){
             walkingNPC.drawDebug(debugRendering.getShapeRendererCollectible());
+        }
+        for(Pet pet : pets){
+            pet.drawDebug(debugRendering.getShapeRendererCollectible());
         }
         debugRendering.endCollectibleRender();
     }
@@ -300,12 +325,14 @@ class MainScreen extends ScreenAdapter {
     Input: @delta - timing variable
     */
     private void update(float delta){
+        isColliding();
         handleInput(delta);
         updateCamera();
         hero.update(tiledSetUp.getLevelWidth(), tiledSetUp.getLevelHeight(), delta);
-        isColliding();
-
+        if(hero.getIsFalling()){canPostFallJump(delta);}
+        System.out.println("F: " + hero.getIsFalling() + " CJ: " + canPostFallJump);
         for(WalkingNPC walkingNPC : walkingNPCS){ walkingNPC.update(delta); }
+        for(Pet pet : pets){ pet.update(delta, hero.getHitBox()); }
     }
 
     //=================================== Input Handling ==========================================
@@ -335,20 +362,28 @@ class MainScreen extends ScreenAdapter {
      * Purpose: Actions that can only be done in developer mode, used for testing
      */
     private void handleInputs(float delta){
-        if(!isTalking) {
+        if(!isTalking && !cameraPan) {
             //======================== Movement Vertically ====================================
-            if (!hero.getIsJumping() && !hero.getIsFalling() && Gdx.input.isKeyJustPressed(Input.Keys.UP)) {
-                //playSFX("Jump");
-                hero.jump();
+            if(Gdx.input.isKeyPressed(Input.Keys.UP)){
+                //If he isn't jumping or falling jump
+               if(!hero.getIsJumping() && (!hero.getIsFalling() || canPostFallJump) && letGoJump){ hero.jump(); }
+               //If the button is held make the jump go higher
+               else{ hero.jumpExt(); }
+               //Make sure that the player won't instantly jump again when landed
+                letGoJump = false;
+            }
+            //Allows to jump again
+            else{
+                letGoJump = true;
             }
 
             hero.setDucking(!hero.getIsJumping() && Gdx.input.isKeyPressed(Input.Keys.DOWN));
 
             //==================== Movement Horizontally ======================================
             if (hero.getIsDucking() && Gdx.input.isKeyPressed(Input.Keys.RIGHT)) {
-                hero.moveHorizontally(1);
+                hero.moveHorizontally(HERO_X_VELOCITY);
             } else if (hero.getIsDucking() && Gdx.input.isKeyPressed(Input.Keys.LEFT)) {
-                hero.moveHorizontally(-1);
+                hero.moveHorizontally(-HERO_X_VELOCITY);
             } else {
                 hero.moveHorizontally(0);
             }
@@ -356,10 +391,19 @@ class MainScreen extends ScreenAdapter {
             if (isTouchingNPC && Gdx.input.isKeyJustPressed(Input.Keys.E)){
                 isTalking = true;
             }
+            else if(Gdx.input.isKeyJustPressed(Input.Keys.E)){
+                hero.attack();
+            }
         }
         else{
             if (Gdx.input.isKeyJustPressed(Input.Keys.E)){
-                isTalking = false;
+                //If the NPC no longer has any lines left exit the convo
+                if(focusedOnNPC.isDialogueDone()){
+                    focusedOnNPC.restartDialogue();
+                    isTalking = false;
+                }
+                //Progress the conversation to next line
+                else{ focusedOnNPC.updateDialogue(); }
             }
         }
 
@@ -449,6 +493,8 @@ class MainScreen extends ScreenAdapter {
         isCollidingPlatform();
         isCollidingSpike();
         isCollidingTalkingNPC();
+        isCollidingWithPets();
+        isAttackCollision();
     }
 
     /**
@@ -463,6 +509,7 @@ class MainScreen extends ScreenAdapter {
                 if(hero.getX() >= platforms.get(i).getX()
                         && hero.getX() + hero.getWidth() <= platforms.get(i).getX() + platforms.get(i).getWidth()) {
                     hero.setLastTouchedGround();     //Saves that position for respawn
+                    canPostFallJump = true;
                 }
             }
         }
@@ -477,7 +524,16 @@ class MainScreen extends ScreenAdapter {
         for (int i = 0; i < spikes.size; i++) {
             if(spikes.get(i).isColliding(hero.getHitBox())){
                 hero.touchedBadObject(-5);
+                cameraPan = true;
             }
+        }
+    }
+
+    private void canPostFallJump(float delta){
+        postFallTime -= delta;
+        if (postFallTime <= 0) {
+            postFallTime = POST_FALL_TIME;
+            canPostFallJump = false;
         }
     }
 
@@ -494,28 +550,59 @@ class MainScreen extends ScreenAdapter {
         }
     }
 
+
+    /**
+     * Purpose: Check if it's touching any platforms
+     */
+    private void isCollidingWithPets() {
+        for (int i = 0; i < pets.size; i++) { pets.get(i).isSensing(hero.getHitBox()); }
+    }
+
+    private void isAttackCollision(){
+        if(hero.isAttacking()){
+            for(Enemy enemy : enemies){
+                if(enemy.isColliding(hero.getAttackHitBox())){
+                    enemy.takeDamage(5);
+                }
+            }
+        }
+    }
+
+
     /**
      * Purpose: Resize the menuStage viewport in case the screen gets resized (Desktop)
      *          Moving the camera if that's part of the game
      */
     public void updateCamera() {
-        //Updates Camera if the X positions has changed
-        if((hero.getX() > WORLD_WIDTH/2f) && (hero.getX() < tiledSetUp.getLevelWidth() - WORLD_WIDTH/2f)) {
-            camera.position.set(hero.getX(), camera.position.y, camera.position.z);
+        if(!cameraPan) {
+            //Updates Camera if the X positions has changed
+            if ((hero.getX() > WORLD_WIDTH / 2f) && (hero.getX() < tiledSetUp.getLevelWidth() - WORLD_WIDTH / 2f)) {
+                camera.position.set(hero.getX(), camera.position.y, camera.position.z);
+                camera.update();
+                tiledSetUp.updateCamera(camera);
+            }
+            //Updates the change of camera to keep the UI moving with the player
+            xCameraDelta = camera.position.x - WORLD_WIDTH / 2f;
+            yCameraDelta = camera.position.y - WORLD_HEIGHT / 2f;
+        }
+        else{
+            float x;
+            if(hero.getX() < camera.position.x){
+                camera.position.set(camera.position.x - 2, camera.position.y, camera.position.z); }
+            else { camera.position.set(camera.position.x + 2, camera.position.y, camera.position.z);}
+
             camera.update();
             tiledSetUp.updateCamera(camera);
-        }
 
-        //Updates the Camera if the Y positions has changed
-        if(hero.getY() >  WORLD_HEIGHT / 2){
-            camera.position.set(camera.position.x, hero.getY(), camera.position.z);
-            camera.update();
-            tiledSetUp.updateCamera(camera);
-        }
+            xCameraDelta = camera.position.x - WORLD_WIDTH / 2f;
+            yCameraDelta = camera.position.y - WORLD_HEIGHT / 2f;
 
-        //Updates the change of camera to keep the UI moving with the player
-        xCameraDelta = camera.position.x - WORLD_WIDTH/2f;
-        yCameraDelta = camera.position.y - WORLD_HEIGHT/2f;
+            if(Math.round(hero.getX()) == Math.round(camera.position.x) ||
+                Math.round(hero.getX()) == Math.round(camera.position.x - 1) ||
+                Math.round(hero.getX()) == Math.round(camera.position.x + 1)
+            )
+            { cameraPan = false; }
+        }
     }
 
     /**
@@ -555,7 +642,9 @@ class MainScreen extends ScreenAdapter {
         if(developerMode){debugInfo();}        //If dev mode is on draw hit boxes and phone stats
         for(TalkingNPC talkingNPC : talkingNPCS){ talkingNPC.draw(batch); }
         for(WalkingNPC walkingNPC : walkingNPCS){ walkingNPC.drawAnimations(batch); }
+        for(Enemy enemy : enemies){ enemy.drawAnimations(batch); }
         hero.drawAnimations(batch);
+        for(Pet pet : pets){ pet.drawAnimations(batch);}
         drawAction();
         for(Spike spike : spikes){ spike.draw(batch); }
 

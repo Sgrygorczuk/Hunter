@@ -25,12 +25,16 @@ public class MainScreenTextures {
     public Texture backgroundMid;
     public Texture backgroundFront;
 
+    //============================= Enemy =================================================
+    public TextureRegion[][] dummySpriteSheet;
+
     public TextureRegion[][] buttonSpriteSheet;
 
     public TextureRegion[][] heroSpriteSheet;
 
     public TextureRegion[][] npcSpriteSheet;
     public TextureRegion[][] childSpriteSheet;
+    public TextureRegion[][] petSpriteSheet;
 
     public MainScreenTextures(){ showTextures(); }
 
@@ -65,9 +69,9 @@ public class MainScreenTextures {
                 menuButtonTexturePath.getWidth()/2, menuButtonTexturePath.getHeight());
 
         //=============================== Hero ======================================================
-        Texture heroTexturePath = new Texture(Gdx.files.internal("Sprites/Orc.png"));
+        Texture heroTexturePath = new Texture(Gdx.files.internal("Sprites/Hero.png"));
         heroSpriteSheet = new TextureRegion(heroTexturePath).split(
-                heroTexturePath.getWidth()/4, heroTexturePath.getHeight());
+                heroTexturePath.getWidth()/4, heroTexturePath.getHeight()/2);
 
 
         //================================== NPCs ==================================================
@@ -79,6 +83,14 @@ public class MainScreenTextures {
         childSpriteSheet = new TextureRegion(childTexturePath).split(
                 childTexturePath.getWidth()/4, childTexturePath.getHeight());
 
+        Texture petTexturePath = new Texture(Gdx.files.internal("Sprites/Pet.png"));
+        petSpriteSheet = new TextureRegion(petTexturePath).split(
+                petTexturePath.getWidth()/2, petTexturePath.getHeight()/4);
+
+        //========================== Enemy ====================================
+        Texture dummyTexturePath = new Texture(Gdx.files.internal("Sprites/Dummy.png"));
+        dummySpriteSheet = new TextureRegion(dummyTexturePath).split(
+                dummyTexturePath.getWidth()/3, dummyTexturePath.getHeight());
     }
 
 }

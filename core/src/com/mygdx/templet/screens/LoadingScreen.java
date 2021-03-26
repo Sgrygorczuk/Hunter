@@ -153,6 +153,7 @@ public class LoadingScreen extends ScreenAdapter{
 
         //========================= Load Tiled Maps ================================================
         hunter.getAssetManager().load("Tiled/MapPlaceHolder.tmx", TiledMap.class);
+        hunter.getAssetManager().load("Tiled/Town.tmx", TiledMap.class);
     }
 
     //=================================== Execute Time Methods =====================================

@@ -4,6 +4,8 @@ import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 
+import java.util.ArrayList;
+
 /**
  * Used to align text
  */
@@ -50,5 +52,34 @@ public class TextAlignment {
             }
         }
         return str;
+    }
+
+    public ArrayList<String> sentences(String str, int lineLength) {
+        int spaceFound;
+        int reminder = 0; //Used to push back the check to wherever the last " " was
+        int start = 0;
+        String modString = "";
+        int counter = 0;
+        ArrayList<String> sentences = new ArrayList<>();
+        for (int j = 0; lineLength * (j + 1) + j - reminder < str.length(); j++) {
+            //Finds the new position of where a " " occurs
+            spaceFound = str.lastIndexOf(" ", lineLength * (j + 1) + j - reminder);
+            //Adds the moded line to the array
+            if(counter == 3){
+                modString = str.substring(start, spaceFound);
+                sentences.add(modString);
+                start = spaceFound;
+                counter = 0;
+            }
+            //Adds in a new line if this is not the end of the string
+            else if (str.length() >= spaceFound + 1) {
+                str = str.substring(0, spaceFound + 1) + "\n" + str.substring(spaceFound);
+                reminder = lineLength * (j + 1) + j - spaceFound;
+                counter++;
+            }
+        }
+        //Adds in the remainder
+        if(start < str.length()) { sentences.add(str.substring(start)); }
+        return sentences;
     }
 }
