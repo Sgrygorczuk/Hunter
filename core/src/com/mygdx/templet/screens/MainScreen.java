@@ -7,17 +7,15 @@ import com.badlogic.gdx.graphics.Camera;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
-import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
-import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.viewport.StretchViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
 import com.mygdx.templet.objects.Platform;
-import com.mygdx.templet.objects.aliveObjects.Dummy;
-import com.mygdx.templet.objects.aliveObjects.Enemy;
+import com.mygdx.templet.objects.aliveObjects.enemies.Dummy;
+import com.mygdx.templet.objects.aliveObjects.enemies.Enemy;
 import com.mygdx.templet.objects.aliveObjects.Hero;
 import com.mygdx.templet.objects.aliveObjects.Pet;
 import com.mygdx.templet.objects.aliveObjects.WalkingNPC;
@@ -30,13 +28,8 @@ import com.mygdx.templet.tools.MusicControl;
 import com.mygdx.templet.tools.TextAlignment;
 import com.mygdx.templet.tools.TiledSetUp;
 
-import java.util.ArrayList;
-
 import static com.mygdx.templet.Const.HERO_X_VELOCITY;
 import static com.mygdx.templet.Const.NUM_BUTTONS_MAIN_SCREEN;
-import static com.mygdx.templet.Const.TEXT_OFFSET;
-import static com.mygdx.templet.Const.DEVELOPER_TEXT_X;
-import static com.mygdx.templet.Const.DEVELOPER_TEXT_Y;
 import static com.mygdx.templet.Const.MENU_BUTTON_HEIGHT;
 import static com.mygdx.templet.Const.MENU_BUTTON_WIDTH;
 import static com.mygdx.templet.Const.MENU_BUTTON_Y_START;
@@ -74,11 +67,11 @@ class MainScreen extends ScreenAdapter {
     private boolean helpFlag = false;           //Tells us if help flag is on or off
     private float xCameraDelta = 0;             //Keeps track of how far the camera has moved (to update menus)
     private float yCameraDelta = 0;             //Keeps track of how far the camera has moved (to update menus)
-    private int buttonIndex = 0;    //Tells us which button we're currently looking at in the main menu
-    private boolean isTouchingNPC = false; //Tells is if we're near an NPC
-    private boolean isTalking = false;
-    private boolean letGoJump = true;
-    private boolean cameraPan = false;
+    private int buttonIndex = 0;                //Tells us which button we're currently looking at in the main menu
+    private boolean isTouchingNPC = false;      //Tells is if we're near an NPC
+    private boolean isTalking = false;          //Tells us if player is talking to an NPC
+    private boolean letGoJump = true;           //Tells us that the player can still jump few sec after falling
+    private boolean cameraPan = false;          //Tells us the camera is paning and player can't move
 
     //=================================== Miscellaneous Vars =======================================
     private final String[] menuButtonText = new String[]{"Controls", "Skins", "Sound Off", "Main Menu", "Back", "Sound On"};
@@ -86,13 +79,15 @@ class MainScreen extends ScreenAdapter {
     private int tiledSelection;                       //Which tiled map is loaded in
 
     //Timer counting down until player can be hit again
-    private static final float POST_FALL_TIME = 0.3F;
-    private float postFallTime = POST_FALL_TIME;
-    private boolean canPostFallJump = true;
+    private static final float POST_FALL_TIME = 0.3F;       //Counter for grace time to jump after fall
+    private float postFallTime = POST_FALL_TIME;            //Counter for grace time to jump after fall
+    private boolean canPostFallJump = true;                 //Flag to let player jump after falling
 
     //================================ Set Up ======================================================
 
+    //============================== Player ============================
     private Hero hero;
+
     //=========================== Physical Objects =====================
     private final Array<Platform> platforms = new Array<>();
     private final Array<Spike> spikes = new Array<>();
@@ -101,7 +96,7 @@ class MainScreen extends ScreenAdapter {
     private final Array<TalkingNPC> talkingNPCS = new Array<>();
     private final Array<WalkingNPC> walkingNPCS = new Array<>();
     private final Array<Pet> pets = new Array<>();
-    private TalkingNPC focusedOnNPC;
+    private TalkingNPC focusedOnNPC;                //NPC that player is near and who can be talked to
 
     //========================= Enemies =================================
     private final Array<Enemy> enemies = new Array<>();
@@ -174,7 +169,7 @@ class MainScreen extends ScreenAdapter {
         Array<String> talkingNPCSNames = tiledSetUp.getLayerNames("TalkingNPC");
         Array<Object> talkingNPCSDialogues = tiledSetUp.getLayerDialogue("TalkingNPC");
         for(int i = 0; i < talkingNPCSPositions.size; i++){
-            addNPCTexture(talkingNPCSNames.get(i), talkingNPCSPositions.get(i), talkingNPCSDialogues.get(i));
+            addNPC(talkingNPCSNames.get(i), talkingNPCSPositions.get(i), talkingNPCSDialogues.get(i));
         }
 
         Array<Vector2> walkingNPCSPositions = tiledSetUp.getLayerCoordinates("WalkingNPC");
@@ -193,7 +188,13 @@ class MainScreen extends ScreenAdapter {
 
     }
 
-    private void addNPCTexture(String name, Vector2 position, Object dialogue){
+    /**
+     * Adds in a NPC that's stationary and can be chatted with by the player
+     * @param name Name of the NPC
+     * @param position Where they stand
+     * @param dialogue  What they say
+     */
+    private void addNPC(String name, Vector2 position, Object dialogue){
         switch (name){
             case "Mom":{
                 talkingNPCS.add(new TalkingNPC(position.x, position.y, mainScreenTextures.momTexture,
@@ -209,6 +210,12 @@ class MainScreen extends ScreenAdapter {
     }
 
 
+    /**
+     * Adds in a walking NPC
+     * @param name Name of NPC
+     * @param position Placement
+     * @param dimensions How far they can walk if they have preset path.
+     */
     private void addWalkingNPC(String name, Vector2 position, Vector2 dimensions){
         switch (name){
             case "Child":{
@@ -222,6 +229,11 @@ class MainScreen extends ScreenAdapter {
         }
     }
 
+    /**
+     * Sets up all the emmies
+     * @param name name of enemy
+     * @param position placement
+     */
     private void addEnemyType(String name, Vector2 position){
         switch (name){
             case "Dummy":{
@@ -232,9 +244,6 @@ class MainScreen extends ScreenAdapter {
             }
         }
     }
-
-
-
 
     /**
      * Purpose: Sets up the camera through which all the objects are view through
@@ -312,10 +321,6 @@ class MainScreen extends ScreenAdapter {
      * Purpose: Draws the info for dev to test the game
     */
     private void debugInfo(){
-        //Batch setting up texture
-        textAlignment.centerText(batch, bitmapFontDeveloper, "Hello Dev", DEVELOPER_TEXT_X, DEVELOPER_TEXT_Y);
-        textAlignment.centerText(batch, bitmapFontDeveloper, "This is Dev Info ", DEVELOPER_TEXT_X, DEVELOPER_TEXT_Y - TEXT_OFFSET);
-        textAlignment.centerText(batch, bitmapFontDeveloper, "Bye", DEVELOPER_TEXT_X, DEVELOPER_TEXT_Y - 2 * TEXT_OFFSET);
     }
 
     //=================================== Updating Methods =========================================
@@ -325,12 +330,24 @@ class MainScreen extends ScreenAdapter {
     Input: @delta - timing variable
     */
     private void update(float delta){
-        isColliding();
-        handleInput(delta);
-        updateCamera();
+        isColliding();          //Checks for everything touching everything else
+        handleInput(delta);     //Checks user input
+        updateCamera();         //Checks camera position changes
+        updateUnits(delta);     //Update character positions and actions
+    }
+
+    //================================== Update Units ===========================================
+
+    /**
+     * Update character position and actions
+     * @param delta timing var
+     */
+    private void updateUnits(float delta){
+        //=============================== Player ================================
         hero.update(tiledSetUp.getLevelWidth(), tiledSetUp.getLevelHeight(), delta);
         if(hero.getIsFalling()){canPostFallJump(delta);}
-        System.out.println("F: " + hero.getIsFalling() + " CJ: " + canPostFallJump);
+
+        //=============================== Walking NPCS ========================
         for(WalkingNPC walkingNPC : walkingNPCS){ walkingNPC.update(delta); }
         for(Pet pet : pets){ pet.update(delta, hero.getHitBox()); }
     }
@@ -372,10 +389,8 @@ class MainScreen extends ScreenAdapter {
                //Make sure that the player won't instantly jump again when landed
                 letGoJump = false;
             }
-            //Allows to jump again
-            else{
-                letGoJump = true;
-            }
+            //Allows to jump again after landing
+            else{ letGoJump = true; }
 
             hero.setDucking(!hero.getIsJumping() && Gdx.input.isKeyPressed(Input.Keys.DOWN));
 
@@ -388,12 +403,11 @@ class MainScreen extends ScreenAdapter {
                 hero.moveHorizontally(0);
             }
 
-            if (isTouchingNPC && Gdx.input.isKeyJustPressed(Input.Keys.E)){
-                isTalking = true;
-            }
-            else if(Gdx.input.isKeyJustPressed(Input.Keys.E)){
-                hero.attack();
-            }
+            //============================= Action =============================
+            //Talks to NPC if near
+            if (isTouchingNPC && Gdx.input.isKeyJustPressed(Input.Keys.E)){ isTalking = true; }
+            //Attacks whatever is in front of player
+            else if(Gdx.input.isKeyJustPressed(Input.Keys.E)){ hero.attack(); }
         }
         else{
             if (Gdx.input.isKeyJustPressed(Input.Keys.E)){
@@ -415,7 +429,7 @@ class MainScreen extends ScreenAdapter {
     private void menuInputHandling(){
         //================================= General Menu ==========================
         if(!helpFlag && !endFlag) {
-            //Movement Vertically
+            //==================== Movement Vertically ====================================
             if (Gdx.input.isKeyJustPressed(Input.Keys.W) || Gdx.input.isKeyJustPressed(Input.Keys.UP)) {
                 buttonIndex--;
                 //playSFX("Menu SFX");
@@ -432,6 +446,7 @@ class MainScreen extends ScreenAdapter {
                 }
             }
 
+            //================================== Action Selection ======================
             if (Gdx.input.isKeyJustPressed(Input.Keys.E)) {
                 //Launches the game
                 //playSFX("Menu Confirm");
@@ -449,6 +464,7 @@ class MainScreen extends ScreenAdapter {
                 }
             }
 
+            //===================================== Leaving ===========================
             if(Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE)){
                 //playSFX("Menu Deconfirm");
                 pausedFlag = false;
@@ -489,12 +505,16 @@ class MainScreen extends ScreenAdapter {
     }
 
     //====================================== Collisions ============================================
+
+    /**
+     * Central function for updating collision
+     */
     private void isColliding(){
-        isCollidingPlatform();
-        isCollidingSpike();
-        isCollidingTalkingNPC();
-        isCollidingWithPets();
-        isAttackCollision();
+        isCollidingPlatform();      //Update collision with platforms for player and any mobile unit
+        isCollidingSpike();         //Checks for player collision with spikes
+        isCollidingTalkingNPC();    //Checks for player being near a talk NPC
+        isCollidingWithPets();      //Check for player being in range of Pet Awareness zone
+        isCollidingAttack();        //Check if player or enemy hit target
     }
 
     /**
@@ -511,6 +531,12 @@ class MainScreen extends ScreenAdapter {
                     hero.setLastTouchedGround();     //Saves that position for respawn
                     canPostFallJump = true;
                 }
+            }
+            //Update pets to have collision with platforms
+            for(int j = 0; j < pets.size; j++){
+                boolean petGround = false;
+                if(pets.get(j).updateCollision(platforms.get(i).getHitBox())){ petGround = true; }
+                if(!petGround){pets.get(j).setFalling(true);}
             }
         }
         //If there is no ground below Cole he should fall
@@ -529,6 +555,10 @@ class MainScreen extends ScreenAdapter {
         }
     }
 
+    /**
+     * Turns off the ability to jump after few second after falling
+     * @param delta timing var
+     */
     private void canPostFallJump(float delta){
         postFallTime -= delta;
         if (postFallTime <= 0) {
@@ -558,7 +588,10 @@ class MainScreen extends ScreenAdapter {
         for (int i = 0; i < pets.size; i++) { pets.get(i).isSensing(hero.getHitBox()); }
     }
 
-    private void isAttackCollision(){
+    /**
+     * Checks if player or enemy hit their target
+     */
+    private void isCollidingAttack(){
         if(hero.isAttacking()){
             for(Enemy enemy : enemies){
                 if(enemy.isColliding(hero.getAttackHitBox())){
@@ -568,12 +601,12 @@ class MainScreen extends ScreenAdapter {
         }
     }
 
-
     /**
      * Purpose: Resize the menuStage viewport in case the screen gets resized (Desktop)
      *          Moving the camera if that's part of the game
      */
     public void updateCamera() {
+        //============================= Camera following player ============================
         if(!cameraPan) {
             //Updates Camera if the X positions has changed
             if ((hero.getX() > WORLD_WIDTH / 2f) && (hero.getX() < tiledSetUp.getLevelWidth() - WORLD_WIDTH / 2f)) {
@@ -585,8 +618,8 @@ class MainScreen extends ScreenAdapter {
             xCameraDelta = camera.position.x - WORLD_WIDTH / 2f;
             yCameraDelta = camera.position.y - WORLD_HEIGHT / 2f;
         }
+        //=========================== Camera panning to player after death ========================
         else{
-            float x;
             if(hero.getX() < camera.position.x){
                 camera.position.set(camera.position.x - 2, camera.position.y, camera.position.z); }
             else { camera.position.set(camera.position.x + 2, camera.position.y, camera.position.z);}
@@ -597,6 +630,7 @@ class MainScreen extends ScreenAdapter {
             xCameraDelta = camera.position.x - WORLD_WIDTH / 2f;
             yCameraDelta = camera.position.y - WORLD_HEIGHT / 2f;
 
+            //Once we reach roughly player position stop panning
             if(Math.round(hero.getX()) == Math.round(camera.position.x) ||
                 Math.round(hero.getX()) == Math.round(camera.position.x - 1) ||
                 Math.round(hero.getX()) == Math.round(camera.position.x + 1)

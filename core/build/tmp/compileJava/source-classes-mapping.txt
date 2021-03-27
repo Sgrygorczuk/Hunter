@@ -1,53 +1,53 @@
-com/mygdx/templet/objects/animatedObjects/animatedObjects.java
- com.mygdx.templet.objects.animatedObjects.animatedObjects
-com/mygdx/templet/objects/Platform.java
- com.mygdx.templet.objects.Platform
-com/mygdx/templet/objects/staticObjects/Spike.java
- com.mygdx.templet.objects.staticObjects.Spike
-com/mygdx/templet/objects/GenericObjects.java
- com.mygdx.templet.objects.GenericObjects
+com/mygdx/templet/screens/textures/MenuScreenTextures.java
+ com.mygdx.templet.screens.textures.MenuScreenTextures
+com/mygdx/templet/Const.java
+ com.mygdx.templet.Const
+com/mygdx/templet/screens/textures/MainScreenTextures.java
+ com.mygdx.templet.screens.textures.MainScreenTextures
+com/mygdx/templet/tools/TiledSetUp.java
+ com.mygdx.templet.tools.TiledSetUp
 com/mygdx/templet/screens/MenuScreen.java
  com.mygdx.templet.screens.MenuScreen
 com/mygdx/templet/tools/TextAlignment.java
  com.mygdx.templet.tools.TextAlignment
-com/mygdx/templet/objects/aliveObjects/AliveObjects.java
- com.mygdx.templet.objects.aliveObjects.AliveObjects
+com/mygdx/templet/main/Hunter.java
+ com.mygdx.templet.main.Hunter
 com/mygdx/templet/screens/textures/CreditsScreenTextures.java
  com.mygdx.templet.screens.textures.CreditsScreenTextures
-com/mygdx/templet/objects/staticObjects/staticObjects.java
- com.mygdx.templet.objects.staticObjects.staticObjects
+com/mygdx/templet/tools/MusicControl.java
+ com.mygdx.templet.tools.MusicControl
 com/mygdx/templet/screens/textures/LoadingScreenTextures.java
  com.mygdx.templet.screens.textures.LoadingScreenTextures
 com/mygdx/templet/tools/DebugRendering.java
  com.mygdx.templet.tools.DebugRendering
-com/mygdx/templet/objects/aliveObjects/Enemy.java
- com.mygdx.templet.objects.aliveObjects.Enemy
-com/mygdx/templet/objects/aliveObjects/Dummy.java
- com.mygdx.templet.objects.aliveObjects.Dummy
-com/mygdx/templet/screens/CreditsScreen.java
- com.mygdx.templet.screens.CreditsScreen
 com/mygdx/templet/tools/TexturePackerTool.java
  com.mygdx.templet.tools.TexturePackerTool
-com/mygdx/templet/tools/MusicControl.java
- com.mygdx.templet.tools.MusicControl
-com/mygdx/templet/Const.java
- com.mygdx.templet.Const
-com/mygdx/templet/objects/aliveObjects/Hero.java
- com.mygdx.templet.objects.aliveObjects.Hero
-com/mygdx/templet/tools/TiledSetUp.java
- com.mygdx.templet.tools.TiledSetUp
-com/mygdx/templet/main/Hunter.java
- com.mygdx.templet.main.Hunter
-com/mygdx/templet/screens/LoadingScreen.java
- com.mygdx.templet.screens.LoadingScreen
-com/mygdx/templet/screens/textures/MenuScreenTextures.java
- com.mygdx.templet.screens.textures.MenuScreenTextures
+com/mygdx/templet/screens/CreditsScreen.java
+ com.mygdx.templet.screens.CreditsScreen
+com/mygdx/templet/objects/Platform.java
+ com.mygdx.templet.objects.Platform
+com/mygdx/templet/objects/animatedObjects/animatedObjects.java
+ com.mygdx.templet.objects.animatedObjects.animatedObjects
+com/mygdx/templet/objects/staticObjects/Spike.java
+ com.mygdx.templet.objects.staticObjects.Spike
+com/mygdx/templet/objects/GenericObjects.java
+ com.mygdx.templet.objects.GenericObjects
+com/mygdx/templet/objects/staticObjects/staticObjects.java
+ com.mygdx.templet.objects.staticObjects.staticObjects
 com/mygdx/templet/objects/staticObjects/TalkingNPC.java
  com.mygdx.templet.objects.staticObjects.TalkingNPC
+com/mygdx/templet/screens/LoadingScreen.java
+ com.mygdx.templet.screens.LoadingScreen
+com/mygdx/templet/objects/aliveObjects/AliveObjects.java
+ com.mygdx.templet.objects.aliveObjects.AliveObjects
 com/mygdx/templet/objects/aliveObjects/WalkingNPC.java
  com.mygdx.templet.objects.aliveObjects.WalkingNPC
-com/mygdx/templet/screens/textures/MainScreenTextures.java
- com.mygdx.templet.screens.textures.MainScreenTextures
+com/mygdx/templet/objects/aliveObjects/enemies/Dummy.java
+ com.mygdx.templet.objects.aliveObjects.enemies.Dummy
+com/mygdx/templet/objects/aliveObjects/enemies/Enemy.java
+ com.mygdx.templet.objects.aliveObjects.enemies.Enemy
+com/mygdx/templet/objects/aliveObjects/Hero.java
+ com.mygdx.templet.objects.aliveObjects.Hero
 com/mygdx/templet/screens/MainScreen.java
  com.mygdx.templet.screens.MainScreen
 com/mygdx/templet/objects/aliveObjects/Pet.java

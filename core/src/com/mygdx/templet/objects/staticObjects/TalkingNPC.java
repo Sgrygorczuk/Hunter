@@ -11,12 +11,21 @@ import java.util.ArrayList;
 
 public class TalkingNPC extends staticObjects{
 
-    private final Texture profileTexture;
-    private ArrayList<String> dialogue = new ArrayList<>();
-    private int linePlace = 0;
-    private final String name;
-    TextAlignment textAlignment = new TextAlignment();
+    private final Texture profileTexture;       //Texture in menu dialogue
+    private final ArrayList<String> dialogue;   //The dialogue broken into chunks that will fit in menu
+    private int linePlace = 0;                  //Current place in the conversation
+    private final String name;                  //Name of the player
+    TextAlignment textAlignment = new TextAlignment();  //Used for text alignment
 
+    /**
+     * A NPC that will stand in a place and will chat with the player if interacted with
+     * @param x position
+     * @param y position
+     * @param texture unit texture
+     * @param profileTexture dialogue menu texture
+     * @param dialogue conversation with player
+     * @param name name of unit
+     */
     public TalkingNPC(float x, float y, Texture texture, Texture profileTexture, String dialogue, String name) {
         super(x, y, texture);
         hitBox.width = texture.getWidth();
@@ -26,14 +35,29 @@ public class TalkingNPC extends staticObjects{
         this.name = name;
     }
 
-    public void updateDialogue(){
-        if(linePlace < dialogue.size()){ linePlace++; }
-    }
+    /**
+     * Moves the conversation along
+     */
+    public void updateDialogue(){ if(linePlace < dialogue.size()){ linePlace++; } }
 
+    /**
+     * Checks if player reached on of conversation
+     * @return are we at the end of the conversation array
+     */
     public boolean isDialogueDone() { return linePlace == dialogue.size() - 1; }
 
+    /**
+     * Once player is done talking set the conversation back to the start
+     */
     public void restartDialogue(){linePlace = 0;}
 
+    /**
+     * Draws the menu details
+     * @param batch where its drawn
+     * @param bitmapFont where the text is drawn
+     * @param xPosition placement on the screen
+     * @param yPosition placements on the screen
+     */
     public void drawSpeech(SpriteBatch batch, BitmapFont bitmapFont, float xPosition, float yPosition){
         //Draws Profile Pic
         batch.draw(profileTexture, 20 + xPosition, 187.5f + yPosition);
