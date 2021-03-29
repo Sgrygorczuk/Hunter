@@ -3,9 +3,9 @@ package com.mygdx.templet.objects.animatedObjects;
 import com.badlogic.gdx.graphics.g2d.Animation;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
-import com.mygdx.templet.objects.GenericObjects;
+import com.mygdx.templet.objects.genericObjects.GenericObjects;
 
-public class animatedObjects extends GenericObjects {
+public class AnimatedObjects extends GenericObjects {
 
     protected TextureRegion[][] spriteSheet;
     protected Animation<TextureRegion> animation;
@@ -14,7 +14,7 @@ public class animatedObjects extends GenericObjects {
 
     boolean isFacingRight = false;
 
-    public animatedObjects(float x, float y, TextureRegion[][] spriteSheet) {
+    public AnimatedObjects(float x, float y, TextureRegion[][] spriteSheet) {
         super(x, y);
         this.spriteSheet = spriteSheet;
         setUpAnimations();

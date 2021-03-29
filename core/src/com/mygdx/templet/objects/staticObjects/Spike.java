@@ -6,7 +6,7 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import static com.mygdx.templet.Const.TILED_HEIGHT;
 import static com.mygdx.templet.Const.TILED_WIDTH;
 
-public class Spike extends staticObjects{
+public class Spike extends StaticObjects {
 
     /**
      * Point thing that hurt player and sends them back to last platform

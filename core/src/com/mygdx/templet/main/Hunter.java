@@ -11,6 +11,8 @@ public class Hunter extends Game {
 
 	//Holds the UI images and sound files
 	private final AssetManager assetManager = new AssetManager();
+	//Holds all the saved data
+	private final GeneralData generalData = new GeneralData();
 
 	/**
 	 * Purpose: Tells the game what controls/information it should provide
@@ -22,6 +24,12 @@ public class Hunter extends Game {
 	 * 	Output: Asset Manager
 	*/
 	public AssetManager getAssetManager() { return assetManager; }
+
+	/**
+	 * Purpose: Return the current state of the game
+	 * @return gets all data that may have been changed by player
+	 */
+	public GeneralData getGeneralData() { return  generalData; }
 
 	/**
 	Purpose: Starts the app

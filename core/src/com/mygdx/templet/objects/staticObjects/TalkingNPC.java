@@ -9,7 +9,7 @@ import com.mygdx.templet.tools.TextAlignment;
 
 import java.util.ArrayList;
 
-public class TalkingNPC extends staticObjects{
+public class TalkingNPC extends StaticObjects {
 
     private final Texture profileTexture;       //Texture in menu dialogue
     private final ArrayList<String> dialogue;   //The dialogue broken into chunks that will fit in menu

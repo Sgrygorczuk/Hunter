@@ -5,7 +5,7 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
-import com.mygdx.templet.objects.GenericObjects;
+import com.mygdx.templet.objects.genericObjects.GenericObjects;
 
 import static com.mygdx.templet.Const.FEET_HEAD_HEIGHT;
 import static com.mygdx.templet.Const.GRAVITY;
@@ -141,7 +141,7 @@ public class AliveObjects extends GenericObjects {
      * @param rectangle the platform we're checking against
      * @return tells us if there is any platform below Cole
      */
-    public boolean updateCollision(Rectangle rectangle){
+    public boolean updateCollision(Rectangle rectangle, int type){
         feetBox.x = hitBox.x + hitBox.width * 0.15f;
         feetBox.y = hitBox.y - FEET_HEAD_HEIGHT;
 
@@ -158,7 +158,7 @@ public class AliveObjects extends GenericObjects {
         }
 
         //===================== Ceiling Collision =====================
-        if(headBox.overlaps(rectangle)){
+        if(headBox.overlaps(rectangle) && type == 0){
             this.hitBox.y = rectangle.y - this.hitBox.height;
             isFalling = true;
             isJumping = false;

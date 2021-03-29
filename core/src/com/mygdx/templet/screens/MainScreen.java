@@ -13,12 +13,15 @@ import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.viewport.StretchViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
-import com.mygdx.templet.objects.Platform;
+import com.mygdx.templet.objects.genericObjects.CollectionZone;
+import com.mygdx.templet.objects.genericObjects.Platform;
 import com.mygdx.templet.objects.aliveObjects.enemies.Dummy;
 import com.mygdx.templet.objects.aliveObjects.enemies.Enemy;
 import com.mygdx.templet.objects.aliveObjects.Hero;
 import com.mygdx.templet.objects.aliveObjects.Pet;
 import com.mygdx.templet.objects.aliveObjects.WalkingNPC;
+import com.mygdx.templet.objects.genericObjects.Door;
+import com.mygdx.templet.objects.staticObjects.Collectible;
 import com.mygdx.templet.objects.staticObjects.TalkingNPC;
 import com.mygdx.templet.objects.staticObjects.Spike;
 import com.mygdx.templet.screens.textures.MainScreenTextures;
@@ -33,6 +36,8 @@ import static com.mygdx.templet.Const.NUM_BUTTONS_MAIN_SCREEN;
 import static com.mygdx.templet.Const.MENU_BUTTON_HEIGHT;
 import static com.mygdx.templet.Const.MENU_BUTTON_WIDTH;
 import static com.mygdx.templet.Const.MENU_BUTTON_Y_START;
+import static com.mygdx.templet.Const.TILED_HEIGHT;
+import static com.mygdx.templet.Const.TILED_WIDTH;
 import static com.mygdx.templet.Const.WORLD_HEIGHT;
 import static com.mygdx.templet.Const.WORLD_WIDTH;
 
@@ -75,8 +80,7 @@ class MainScreen extends ScreenAdapter {
 
     //=================================== Miscellaneous Vars =======================================
     private final String[] menuButtonText = new String[]{"Controls", "Skins", "Sound Off", "Main Menu", "Back", "Sound On"};
-    private Array<String> levelNames = new Array<>(); //Names of all the lvls in order
-    private int tiledSelection;                       //Which tiled map is loaded in
+    private final String tiled;
 
     //Timer counting down until player can be hit again
     private static final float POST_FALL_TIME = 0.3F;       //Counter for grace time to jump after fall
@@ -90,7 +94,11 @@ class MainScreen extends ScreenAdapter {
 
     //=========================== Physical Objects =====================
     private final Array<Platform> platforms = new Array<>();
+    private CollectionZone collectionZone;
     private final Array<Spike> spikes = new Array<>();
+    private final Array<Door> doors = new Array<>();
+    private Collectible collectible;
+    private String previousDoor = "";
 
     //========================== NPCs ==================================
     private final Array<TalkingNPC> talkingNPCS = new Array<>();
@@ -106,11 +114,19 @@ class MainScreen extends ScreenAdapter {
      * Purpose: Grabs the info from main screen that holds asset manager
      * Input: BasicTemplet
     */
-    MainScreen(Hunter hunter, int tiledSelection) {
+    MainScreen(Hunter hunter, String currentScreen) {
         this.hunter = hunter;
+        this.tiled = currentScreen;
+  }
 
-        this.tiledSelection = tiledSelection;
-        levelNames.add("Tiled/Town.tmx");
+    /**
+     * Purpose: Grabs the info from main screen that holds asset manager
+     * Input: BasicTemplet
+     */
+    MainScreen(Hunter hunter, String previous, String currentScreen) {
+        this.hunter = hunter;
+        this.tiled = currentScreen;
+        this.previousDoor = previous;
     }
 
 
@@ -143,18 +159,23 @@ class MainScreen extends ScreenAdapter {
      * Purpose: Sets up all the objects imported from tiled
      */
     private void showTiled() {
-        tiledSetUp = new TiledSetUp(hunter.getAssetManager(), batch, levelNames.get(tiledSelection));
-
-        //======================================== Hero =========================================
-        Array<Vector2> heroPosition = tiledSetUp.getLayerCoordinates("Hero");
-        hero = new Hero(heroPosition.get(0).x, heroPosition.get(0).y, mainScreenTextures.heroSpriteSheet);
+        tiledSetUp = new TiledSetUp(hunter.getAssetManager(), batch, tiled);
 
         //================================= Platforms =======================================
         Array<Vector2> platformsPositions = tiledSetUp.getLayerCoordinates("Platforms");
         Array<Vector2> platformsDimensions = tiledSetUp.getLayerDimensions("Platforms");
         for(int i = 0; i < platformsPositions.size; i++){
-            platforms.add(new Platform(platformsPositions.get(i).x, platformsPositions.get(i).y, platformsDimensions.get(i).x, platformsDimensions.get(i).y));
+
+            platforms.add(new Platform(platformsPositions.get(i).x, platformsPositions.get(i).y, platformsDimensions.get(i).x, platformsDimensions.get(i).y, 0));
         }
+
+        Array<Vector2> pPlatformsPositions = tiledSetUp.getLayerCoordinates("PPlatforms");
+        Array<Vector2> pPlatformsDimensions = tiledSetUp.getLayerDimensions("PPlatforms");
+        for(int i = 0; i < pPlatformsPositions.size; i++){
+
+            platforms.add(new Platform(pPlatformsPositions.get(i).x, pPlatformsPositions.get(i).y, pPlatformsDimensions.get(i).x, pPlatformsDimensions.get(i).y, 1));
+        }
+
 
         //================================= Spikes =======================================
         Array<Vector2> spikesPositions = tiledSetUp.getLayerCoordinates("Spikes");
@@ -163,6 +184,20 @@ class MainScreen extends ScreenAdapter {
             spikes.add(new Spike(spikesPositions.get(i).x, spikesPositions.get(i).y,
                     spikesDimensions.get(i).x, mainScreenTextures.spikeTexture));
         }
+
+        //================================= Collection Zone ========================================
+        Array<Vector2> collectionZonePosition = tiledSetUp.getLayerCoordinates("Collect Zone");
+        Array<Vector2> collectionZoneDimensions = tiledSetUp.getLayerDimensions("Collect Zone");
+        collectionZone = new CollectionZone(collectionZonePosition.get(0).x,
+                collectionZonePosition.get(0).y, collectionZoneDimensions.get(0).x,
+                collectionZoneDimensions.get(0).y);
+
+        //================================= Collectibles ===========================================
+        Array<Vector2> collectiblesPosition = tiledSetUp.getLayerCoordinates("Collectible");
+        Array<String> collectiblesName = tiledSetUp.getLayerNames("Collectible");
+        collectible = new Collectible(collectiblesPosition.get(0).x, collectiblesPosition.get(0).y,
+                mainScreenTextures.collectibleTexture, collectiblesName.get(0),
+                hunter.getGeneralData().getCollected(tiled));
 
         //================================= NPCs =============================================
         Array<Vector2> talkingNPCSPositions = tiledSetUp.getLayerCoordinates("TalkingNPC");
@@ -184,6 +219,36 @@ class MainScreen extends ScreenAdapter {
         Array<String> enemyNames = tiledSetUp.getLayerNames("Enemy");
         for(int i = 0; i < enemyPositions.size; i++){
             addEnemyType(enemyNames.get(i), enemyPositions.get(i));
+            //if(hunter.getGeneralData().getCollected(tiled)){ enemies.get(i).setDead(); }
+        }
+
+        //============================= Door =======================================================
+        Array<Vector2> doorPositions = tiledSetUp.getLayerCoordinates("Door");
+        Array<String> doorNames = tiledSetUp.getLayerNames("Door");
+        for(int i = 0; i < doorPositions.size; i++){
+            doors.add(new Door(doorPositions.get(i).x, doorPositions.get(i).y, doorNames.get(i)));
+        }
+
+        //======================================== Hero =========================================
+        //Puts the Player at a Door
+        if(previousDoor.length() > 0){
+            int doorPlacement = doorNames.indexOf(previousDoor, false);
+            if(doors.get(doorPlacement).getX() < WORLD_WIDTH/2f) {
+                hero = new Hero(doors.get(doorPlacement).getX() + TILED_WIDTH,
+                        doors.get(doorPlacement).getY(),
+                        mainScreenTextures.heroSpriteSheet);
+            }
+            else{
+                hero = new Hero(doors.get(doorPlacement).getX() - TILED_WIDTH,
+                        doors.get(doorPlacement).getY(),
+                        mainScreenTextures.heroSpriteSheet);
+            }
+        }
+        //Places the Player at the spawn point
+        else{
+            Array<Vector2> heroPosition = tiledSetUp.getLayerCoordinates("Hero");
+            hero = new Hero(heroPosition.get(0).x, heroPosition.get(0).y,
+                    mainScreenTextures.heroSpriteSheet);
         }
 
     }
@@ -209,7 +274,6 @@ class MainScreen extends ScreenAdapter {
         }
     }
 
-
     /**
      * Adds in a walking NPC
      * @param name Name of NPC
@@ -218,12 +282,13 @@ class MainScreen extends ScreenAdapter {
      */
     private void addWalkingNPC(String name, Vector2 position, Vector2 dimensions){
         switch (name){
-            case "Child":{
-                walkingNPCS.add(new WalkingNPC(position.x, position.y, dimensions.x, mainScreenTextures.childSpriteSheet));
-                break;
-            }
             case "Pet":{
-                pets.add(new Pet(position.x, position.y, mainScreenTextures.petSpriteSheet));
+                if(hunter.getGeneralData().getCollected(tiled) && collectible.getName().equals("Pet")){
+                    pets.add(new Pet(collectionZone.getX() + collectionZone.getWidth()/2f, position.y, mainScreenTextures.petSpriteSheet));
+                }
+                else{
+                    pets.add(new Pet(position.x, position.y, mainScreenTextures.petSpriteSheet));
+                }
                 break;
             }
         }
@@ -238,6 +303,7 @@ class MainScreen extends ScreenAdapter {
         switch (name){
             case "Dummy":{
                 enemies.add(new Dummy(position.x, position.y, mainScreenTextures.dummySpriteSheet));
+                break;
             }
             default:{
                 enemies.add(new Dummy(position.x, position.y, mainScreenTextures.dummySpriteSheet));
@@ -286,12 +352,8 @@ class MainScreen extends ScreenAdapter {
      */
     private void debugRender(){
         debugRendering.startEnemyRender();
-        for(Spike spike : spikes){
-            spike.drawDebug(debugRendering.getShapeRenderEnemy());
-        }
-        for(Enemy enemy : enemies){
-            enemy.drawDebug(debugRendering.getShapeRenderEnemy());
-        }
+        for(Spike spike : spikes){ spike.drawDebug(debugRendering.getShapeRenderEnemy()); }
+        for(Enemy enemy : enemies){ enemy.drawDebug(debugRendering.getShapeRenderEnemy()); }
         debugRendering.endEnemyRender();
 
         debugRendering.startUserRender();
@@ -299,21 +361,18 @@ class MainScreen extends ScreenAdapter {
         debugRendering.endUserRender();
 
         debugRendering.startBackgroundRender();
-        for(Platform platform : platforms){
-            platform.drawDebug(debugRendering.getShapeRendererBackground());
-        }
+        debugRendering.setShapeRendererBackgroundColor(Color.BLUE);
+        for(Platform platform : platforms){ platform.drawDebug(debugRendering.getShapeRendererBackground()); }
+        debugRendering.setShapeRendererBackgroundColor(Color.YELLOW);
+        for(Door door : doors){ door.drawDebug(debugRendering.getShapeRendererBackground()); }
+        collectionZone.drawDebug(debugRendering.getShapeRendererBackground());
         debugRendering.endBackgroundRender();
 
         debugRendering.startCollectibleRender();
-        for(TalkingNPC talkingNPC : talkingNPCS){
-            talkingNPC.drawDebug(debugRendering.getShapeRendererCollectible());
-        }
-        for(WalkingNPC walkingNPC : walkingNPCS){
-            walkingNPC.drawDebug(debugRendering.getShapeRendererCollectible());
-        }
-        for(Pet pet : pets){
-            pet.drawDebug(debugRendering.getShapeRendererCollectible());
-        }
+        for(TalkingNPC talkingNPC : talkingNPCS){ talkingNPC.drawDebug(debugRendering.getShapeRendererCollectible()); }
+        for(WalkingNPC walkingNPC : walkingNPCS){ walkingNPC.drawDebug(debugRendering.getShapeRendererCollectible()); }
+        for(Pet pet : pets){ pet.drawDebug(debugRendering.getShapeRendererCollectible()); }
+        collectible.drawDebug(debugRendering.getShapeRendererCollectible());
         debugRendering.endCollectibleRender();
     }
 
@@ -349,7 +408,19 @@ class MainScreen extends ScreenAdapter {
 
         //=============================== Walking NPCS ========================
         for(WalkingNPC walkingNPC : walkingNPCS){ walkingNPC.update(delta); }
-        for(Pet pet : pets){ pet.update(delta, hero.getHitBox()); }
+        for(Pet pet : pets){ pet.update(delta, hero.getHitBox(),
+                collectionZone.getX(), collectionZone.getX() + collectionZone.getWidth()); }
+
+        //================================= Collectible ===========================================
+        //Checks if all emmies died
+        boolean allDead = true;
+        for(Enemy enemy : enemies){
+            if(enemy.getCurrentHealth() > 0){ allDead = false; }
+        }
+        //If all of the enemies are dead then the collectible should appear
+        if(allDead){
+            if(collectible.getName().equals("Combat")){collectible.setCanBeCollected();}
+        }
     }
 
     //=================================== Input Handling ==========================================
@@ -515,6 +586,9 @@ class MainScreen extends ScreenAdapter {
         isCollidingTalkingNPC();    //Checks for player being near a talk NPC
         isCollidingWithPets();      //Check for player being in range of Pet Awareness zone
         isCollidingAttack();        //Check if player or enemy hit target
+        isCollidingDoor();
+        isPetCollidingWithCollectionZone();
+        isCollidingWithCollectibles();
     }
 
     /**
@@ -524,7 +598,7 @@ class MainScreen extends ScreenAdapter {
         //Checks if there is ground below him
         boolean hasGround = false;
         for (int i = 0; i < platforms.size; i++) {
-            if(hero.updateCollision(platforms.get(i).getHitBox())){
+            if(hero.updateCollision(platforms.get(i).getHitBox(), platforms.get(i).getType())){
                 hasGround = true;                //Tells us that he's standing
                 if(hero.getX() >= platforms.get(i).getX()
                         && hero.getX() + hero.getWidth() <= platforms.get(i).getX() + platforms.get(i).getWidth()) {
@@ -535,7 +609,7 @@ class MainScreen extends ScreenAdapter {
             //Update pets to have collision with platforms
             for(int j = 0; j < pets.size; j++){
                 boolean petGround = false;
-                if(pets.get(j).updateCollision(platforms.get(i).getHitBox())){ petGround = true; }
+                if(pets.get(j).updateCollision(platforms.get(i).getHitBox(), 0)){ petGround = true; }
                 if(!petGround){pets.get(j).setFalling(true);}
             }
         }
@@ -602,40 +676,127 @@ class MainScreen extends ScreenAdapter {
     }
 
     /**
+     * Checks if player is going to another zone
+     */
+    private void isCollidingDoor(){
+        for(Door door : doors){
+            if(door.isColliding(hero.getHitBox()) && (hero.getX() == door.getX() ||
+                    ((hero.getX() + hero.getWidth()) == (door.getX() + door.getWidth())))){
+                hunter.setScreen(new LoadingScreen(hunter, 2, tiled, door.getPathName()));
+            }
+        }
+    }
+
+
+    /**
+     * Checks if the pets are in the collection zone
+     */
+    private void isPetCollidingWithCollectionZone(){
+        boolean collectedAllPets = true;
+        for(Pet pet : pets){
+            //Checks if the pet is within the collections area
+            if(pet.isColliding(collectionZone.getHitBox()) &&
+                    pet.getX() + pet.getWidth() < collectionZone.getX() + collectionZone.getWidth()
+            && pet.getX() > collectionZone.getX()) { pet.setIsCollected(); }
+            //If any of the pets are not in the pen then we have not called all of them
+            else{ collectedAllPets = false; }
+        }
+
+        //If all of the pets are collected then the collectible should appear
+        if(collectedAllPets){
+            if(collectible.getName().equals("Pet")){collectible.setCanBeCollected();}
+        }
+    }
+
+    private void isCollidingWithCollectibles(){
+        if(collectible.isColliding(hero.getHitBox())){
+            collectible.setCollected();
+            hunter.getGeneralData().setCollected(tiled);
+        }
+    }
+
+    /**
      * Purpose: Resize the menuStage viewport in case the screen gets resized (Desktop)
      *          Moving the camera if that's part of the game
      */
     public void updateCamera() {
         //============================= Camera following player ============================
         if(!cameraPan) {
+            float cameraX = camera.position.x;
+            float cameraY;
             //Updates Camera if the X positions has changed
-            if ((hero.getX() > WORLD_WIDTH / 2f) && (hero.getX() < tiledSetUp.getLevelWidth() - WORLD_WIDTH / 2f)) {
-                camera.position.set(hero.getX(), camera.position.y, camera.position.z);
-                camera.update();
-                tiledSetUp.updateCamera(camera);
+            if(hero.getX() >= camera.position.x + WORLD_WIDTH/2f){
+                cameraX =tiledSetUp.getLevelWidth() - WORLD_WIDTH/2;
             }
+            else if (((hero.getX() > WORLD_WIDTH / 2f)
+                    && (hero.getX() < tiledSetUp.getLevelWidth() - WORLD_WIDTH / 2f))) {
+                cameraX = hero.getX();
+            }
+
+            //Always follow hero
+            cameraY = hero.getY();
+            //If we hit the bounds of the map stop at the world/2f distance from the world end
+            if(cameraY < WORLD_HEIGHT/2f){ cameraY = WORLD_HEIGHT/2f; }
+            else if(cameraY > tiledSetUp.getLevelHeight() - WORLD_HEIGHT/2f){ cameraY = tiledSetUp.getLevelHeight() - WORLD_HEIGHT/2f; }
+
+            camera.position.set(cameraX, cameraY, camera.position.z);
+            camera.update();
+            tiledSetUp.updateCamera(camera);
+
             //Updates the change of camera to keep the UI moving with the player
             xCameraDelta = camera.position.x - WORLD_WIDTH / 2f;
             yCameraDelta = camera.position.y - WORLD_HEIGHT / 2f;
         }
         //=========================== Camera panning to player after death ========================
         else{
-            if(hero.getX() < camera.position.x){
-                camera.position.set(camera.position.x - 2, camera.position.y, camera.position.z); }
-            else { camera.position.set(camera.position.x + 2, camera.position.y, camera.position.z);}
+            float cameraX;
+            float cameraY;
 
+            //===================================== X ==============================================
+            //If we reached the end and the Y still needs to move just stay still
+            if(Math.round(hero.getX()) == Math.round(camera.position.x) ||
+                    Math.round(hero.getX()) == Math.round(camera.position.x - 1) ||
+                    Math.round(hero.getX()) == Math.round(camera.position.x + 1)){
+                cameraX = camera.position.x;
+            }
+            //If we're to the left of the camera move left
+            else if(hero.getX() < camera.position.x){ cameraX = camera.position.x - 2; }
+            //If we're to the right of the camera move right
+            else { cameraX = camera.position.x + 2;}
+
+            //If we reached the boarder of the screen don't go further
+            if(cameraX < WORLD_WIDTH/2f){ cameraX = WORLD_WIDTH/2f; }
+            else if(cameraX > tiledSetUp.getLevelWidth() - WORLD_WIDTH/2f){ cameraX = tiledSetUp.getLevelWidth() - WORLD_WIDTH/2f;}
+
+
+            //===================================== Y ===============================================
+            //If we reached the end and the X still needs to move just stay still
+            if(Math.round(hero.getY()) == Math.round(camera.position.y) ||
+                    Math.round(hero.getY()) == Math.round(camera.position.y - 1) ||
+                    Math.round(hero.getY()) == Math.round(camera.position.y + 1)){
+                cameraY = camera.position.y;
+            }
+            //If we're to the below of the camera move below
+            else if(hero.getY() < camera.position.y){ cameraY = camera.position.y - 2; }
+            //If we're to the above of the camera move above
+            else { cameraY = camera.position.y + 2;}
+
+            //If we reach the boarder of the screen to go further
+            if(cameraY < WORLD_HEIGHT/2f){ cameraY = WORLD_HEIGHT/2f; }
+            else if(cameraY > tiledSetUp.getLevelHeight() - WORLD_HEIGHT/2f){ cameraY = tiledSetUp.getLevelHeight() - WORLD_HEIGHT/2f; }
+
+            //================================= Exit Pan ===========================================
+            //Once we reach roughly player position stop panning
+            if(camera.position.x == cameraX && camera.position.y == cameraY) { cameraPan = false; }
+
+            //================================= Update =============================================
+            camera.position.set(cameraX, cameraY, camera.position.z);
             camera.update();
             tiledSetUp.updateCamera(camera);
 
             xCameraDelta = camera.position.x - WORLD_WIDTH / 2f;
             yCameraDelta = camera.position.y - WORLD_HEIGHT / 2f;
 
-            //Once we reach roughly player position stop panning
-            if(Math.round(hero.getX()) == Math.round(camera.position.x) ||
-                Math.round(hero.getX()) == Math.round(camera.position.x - 1) ||
-                Math.round(hero.getX()) == Math.round(camera.position.x + 1)
-            )
-            { cameraPan = false; }
         }
     }
 
@@ -681,6 +842,8 @@ class MainScreen extends ScreenAdapter {
         for(Pet pet : pets){ pet.drawAnimations(batch);}
         drawAction();
         for(Spike spike : spikes){ spike.draw(batch); }
+        collectible.draw(batch);
+
 
         if(isTalking){
             drawTalkingMenu();

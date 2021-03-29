@@ -18,6 +18,7 @@ public class Pet extends AliveObjects{
     //Timer Counting unti the pet will wander
     private static final float WANDER_TIME = 0.5F;
     private float wanderTime = WANDER_TIME;
+    private boolean isCollected = false;
 
     /**
      * A friendly alive object that follows the player around
@@ -48,12 +49,14 @@ public class Pet extends AliveObjects{
      */
     public void isSensing(Rectangle playerHitBox){ sensePlayer = this.awarenessHitBox.overlaps(playerHitBox); }
 
+    public void setIsCollected(){this.isCollected = true;}
+
     /**
      * General update function for Pets
      * @param delta timing var
      * @param player player hitBox
      */
-    public void update(float delta, Rectangle player){
+    public void update(float delta, Rectangle player, float collectXMin, float collectXMax){
         //============ Animation Update =================
         animationRightTime += delta;
         animationLeftTime += delta;
@@ -65,10 +68,25 @@ public class Pet extends AliveObjects{
 
         //================ Movement Update =====================
         updateVelocityY();
-        updateHorizontal(delta, player);
+        if(isCollected){ updateHorizontalCollected(delta); }
+        else{ updateHorizontal(delta, player); }
 
-        hitBox.x += velocity.x; //Has to be after so he doesn't smash into walls
+        //Has to be after so he doesn't smash into walls
+        if(hitBox.x + hitBox.width + velocity.x >= collectXMax && isCollected){ hitBox.x = collectXMax - hitBox.width; }
+        else if(hitBox.x + velocity.x <= collectXMin && isCollected){ hitBox.x = collectXMin; }
+        else{ hitBox.x += velocity.x; }
+    }
 
+    private void updateHorizontalCollected(float delta){
+        float random;   //Used to add random movements so the pet is "grazing"
+        wanderTime -= delta;
+        //Wander every once in a while
+        if (wanderTime <= 0) {
+            random = MathUtils.random(-3f, 3f);
+            wanderTime = WANDER_TIME;
+        }
+        else{ random = 0; }
+        velocity.x = random;
     }
 
     /**
@@ -85,7 +103,7 @@ public class Pet extends AliveObjects{
                 wanderTime -= delta;
                 //Wander every once in a while
                 if (wanderTime <= 0) {
-                    random = MathUtils.random(-2, 2);
+                    random = MathUtils.random(-3f, 3f);
                     wanderTime = WANDER_TIME;
                 }
                 //Stay still

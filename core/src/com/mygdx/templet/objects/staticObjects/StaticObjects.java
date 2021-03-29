@@ -2,9 +2,9 @@ package com.mygdx.templet.objects.staticObjects;
 
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
-import com.mygdx.templet.objects.GenericObjects;
+import com.mygdx.templet.objects.genericObjects.GenericObjects;
 
-public class staticObjects extends GenericObjects {
+public class StaticObjects extends GenericObjects {
 
     //Texture displayed
     protected Texture texture;
@@ -15,7 +15,7 @@ public class staticObjects extends GenericObjects {
      * @param y position
      * @param texture image
      */
-    public staticObjects(float x, float y, Texture texture) {
+    public StaticObjects(float x, float y, Texture texture) {
         super(x, y);
         this.texture = texture;
     }

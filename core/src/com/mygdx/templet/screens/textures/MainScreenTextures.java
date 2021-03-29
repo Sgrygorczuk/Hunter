@@ -18,6 +18,7 @@ public class MainScreenTextures {
     public Texture momPortTexture;
     public Texture manTexture;
     public Texture manPortTexture;
+    public Texture collectibleTexture;
 
     //=================================== Background ===============================================
     public Texture backgroundColor;
@@ -32,8 +33,6 @@ public class MainScreenTextures {
 
     public TextureRegion[][] heroSpriteSheet;
 
-    public TextureRegion[][] npcSpriteSheet;
-    public TextureRegion[][] childSpriteSheet;
     public TextureRegion[][] petSpriteSheet;
 
     public MainScreenTextures(){ showTextures(); }
@@ -50,6 +49,7 @@ public class MainScreenTextures {
 
         //======================= Physical Objects ========================================
         spikeTexture = new Texture(Gdx.files.internal("Sprites/Spikes.png"));
+        collectibleTexture = new Texture(Gdx.files.internal("Sprites/Collectible.png"));
 
         //========================= NPCs =================================================
         momTexture = new Texture(Gdx.files.internal("Sprites/NPC/Mom.png"));
@@ -75,14 +75,6 @@ public class MainScreenTextures {
 
 
         //================================== NPCs ==================================================
-        Texture npcTexturePath = new Texture(Gdx.files.internal("Sprites/NPC.png"));
-        npcSpriteSheet = new TextureRegion(npcTexturePath).split(
-                npcTexturePath.getWidth()/4, npcTexturePath.getHeight()/2);
-
-        Texture childTexturePath = new Texture(Gdx.files.internal("Sprites/Child.png"));
-        childSpriteSheet = new TextureRegion(childTexturePath).split(
-                childTexturePath.getWidth()/4, childTexturePath.getHeight());
-
         Texture petTexturePath = new Texture(Gdx.files.internal("Sprites/Pet.png"));
         petSpriteSheet = new TextureRegion(petTexturePath).split(
                 petTexturePath.getWidth()/2, petTexturePath.getHeight()/4);

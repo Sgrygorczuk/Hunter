@@ -14,4 +14,6 @@ public class Enemy extends AliveObjects {
         super(x, y, spriteSheet);
     }
 
+    public void setDead(){ currentHealth = -1; }
+
 }

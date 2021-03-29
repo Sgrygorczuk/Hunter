@@ -63,6 +63,8 @@ public class LoadingScreen extends ScreenAdapter{
     private float loadTimer = LOADING_TIME;
     private String loadingString = "Loading";
 
+    private String previousScreen;
+    private String currentScreen;
 
     /**
      * Purpose: The Constructor used when loading up the game for the first time showing off the logo
@@ -82,6 +84,18 @@ public class LoadingScreen extends ScreenAdapter{
     public LoadingScreen(Hunter hunter, int screenPath) {
         this.hunter = hunter;
         this.screenPath = screenPath;
+    }
+
+    /**
+     * Purpose: General Constructor for moving between screens
+     * @param hunter game object with data
+     * @param screenPath tells us which screen to go to from here
+     */
+    public LoadingScreen(Hunter hunter, int screenPath, String previousScreen, String currentScreen) {
+        this.hunter = hunter;
+        this.screenPath = screenPath;
+        this.previousScreen = previousScreen;
+        this.currentScreen = currentScreen;
     }
 
     /**
@@ -154,6 +168,9 @@ public class LoadingScreen extends ScreenAdapter{
         //========================= Load Tiled Maps ================================================
         hunter.getAssetManager().load("Tiled/MapPlaceHolder.tmx", TiledMap.class);
         hunter.getAssetManager().load("Tiled/Town.tmx", TiledMap.class);
+        hunter.getAssetManager().load("Tiled/Farm.tmx", TiledMap.class);
+        hunter.getAssetManager().load("Tiled/Archery.tmx", TiledMap.class);
+        hunter.getAssetManager().load("Tiled/Cavern.tmx", TiledMap.class);
     }
 
     //=================================== Execute Time Methods =====================================
@@ -223,11 +240,16 @@ public class LoadingScreen extends ScreenAdapter{
                 break;
             }
             case 1:{
-                hunter.setScreen(new MainScreen(hunter, 0));
+                hunter.setScreen(new MainScreen(hunter, "Tiled/Town.tmx"));
                 break;
             }
             case 2:{
+                hunter.setScreen(new MainScreen(hunter, previousScreen, currentScreen));
+                break;
+            }
+            case 3:{
                 hunter.setScreen(new CreditsScreen(hunter));
+                break;
             }
             default:{
                 hunter.setScreen(new MenuScreen(hunter));

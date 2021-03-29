@@ -1,4 +1,4 @@
-package com.mygdx.templet.objects;
+package com.mygdx.templet.objects.genericObjects;
 
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.Rectangle;
